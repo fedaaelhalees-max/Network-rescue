@@ -1,0 +1,1566 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#070d24">
+<title>مغامرة إنقاذ الشبكة</title>
+<style>
+:root{
+  /* مدينة رقمية ليلية: كحلي عميق، سماوي للتقنية، أصفر شمسي للمكافآت. التخطيط: مشهد 3D في الخلف ولوحة سفلية (جانبية على الشاشات العريضة) */
+  --bg:#070d24; --panel:#0d163af2; --panel2:#15235a; --line:#2c4391; --ink:#eef3ff; --mute:#a3b4e2;
+  --cy:#38e1ff; --sun:#ffd166; --ok:#4ade80; --bad:#ff8a8a; --vio:#8b7bff;
+  --font:"Segoe UI","Noto Kufi Arabic","Noto Sans Arabic","Geeza Pro","Dubai",Tahoma,system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.7;overflow:hidden;-webkit-tap-highlight-color:transparent;position:relative}
+body.no3d{background:radial-gradient(circle at 50% 20%,#1b2a6e,#070d24 70%)}
+#gl{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+body.no3d #gl{display:none}
+#labels,#fx{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.lbl{position:absolute;top:0;left:0;font-size:11px;font-weight:700;padding:1px 7px;border-radius:9px;background:#070d24cc;border:1px solid var(--line);white-space:nowrap;will-change:transform}
+.lbl.ip{direction:ltr;font-family:ui-monospace,Consolas,monospace;font-size:10.5px;color:var(--sun)}
+.lbl.rt{color:#cfc8ff;border-color:var(--vio)}
+.lbl.netA{color:#2dd4bf}.lbl.netB{color:#ffc94d}.lbl.netC{color:#ff7ac3}
+.lbl.cube{font-size:22px;background:none;border:0;text-shadow:0 2px 8px #000;direction:ltr}
+.lbl.gate{font-size:30px;background:none;border:0;text-shadow:0 2px 10px #000}
+#fx span{position:absolute;font-size:26px;animation:up 1.4s ease-out forwards}
+@keyframes up{from{transform:translate(0,30px) scale(.4);opacity:0}25%{opacity:1}to{transform:translate(var(--dx),-150px) scale(1.2);opacity:0}}
+.cf{position:absolute;top:-12px;width:9px;height:15px;border-radius:2px;animation:fall 3s linear forwards}
+@keyframes fall{to{transform:translateY(105vh) rotate(var(--r));opacity:.85}}
+
+button,input,select,textarea{font:inherit;color:inherit}
+.btn{min-height:46px;padding:8px 16px;border-radius:12px;border:1.5px solid var(--line);background:var(--panel2);cursor:pointer;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-align:center}
+.btn:hover{border-color:var(--cy)} .btn:active{transform:translateY(1px)}
+.btn.pri{background:linear-gradient(180deg,#48e6ff,#18b4dd);color:#04122e;border-color:#9bf1ff}
+.btn.ghost{background:transparent}
+.btn.big{min-height:56px;font-size:19px;width:100%}
+.btn.sm{min-height:38px;padding:4px 12px;font-size:14px}
+.btn.danger{border-color:var(--bad);color:var(--bad)}
+.btn:disabled{opacity:.45;cursor:default}
+:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+.mute{color:var(--mute);font-size:14px}
+.tag{display:inline-block;align-self:flex-start;font-size:12.5px;font-weight:700;color:#04122e;background:var(--sun);padding:0 10px;border-radius:20px}
+.en{font-size:12px;letter-spacing:.12em;color:var(--cy);font-weight:700;direction:ltr;display:inline-block}
+.row{display:flex;gap:10px;align-items:center;margin-top:12px}.wrap{flex-wrap:wrap}
+
+/* الشريط العلوي */
+#hud{position:absolute;top:0;right:0;left:0;height:54px;padding:6px 10px 6px 58px;display:flex;align-items:center;gap:8px;background:linear-gradient(#070d24f0,#070d2400);z-index:5}
+#hud[hidden]{display:none}
+.ic{width:42px;height:42px;border-radius:12px;border:1.5px solid var(--line);background:#0d163ad9;font-size:19px;cursor:pointer;flex:none}
+#b-snd{position:absolute;top:6px;left:8px;z-index:6}
+.hud-mid{flex:1;min-width:0}
+#hud-title{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar{display:block;height:8px;background:#1a2a66;border-radius:8px;overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--cy),var(--sun));border-radius:8px;transition:width .4s}
+.chipx{font-size:13px;font-weight:700;background:#0d163ad9;border:1.5px solid var(--line);border-radius:10px;padding:3px 8px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.chipx .ok{color:var(--ok)}.chipx .bad{color:var(--bad)}
+
+/* فقاعة الروبوت */
+#bubble{position:absolute;top:66px;right:112px;left:12px;max-width:330px;margin-inline-start:auto;background:#fff;color:#0b1538;border-radius:14px 4px 14px 14px;padding:7px 12px;font-size:14px;font-weight:600;line-height:1.5;z-index:4;pointer-events:none;box-shadow:0 6px 20px #0008}
+#bubble b{display:block;font-size:10px;letter-spacing:.1em;color:#1375a8;direction:ltr;text-align:right}
+#bubble.pop{animation:pop .25s ease-out}
+@keyframes pop{from{transform:scale(.85);opacity:0}}
+body[data-lay=party] #bubble{top:12px;right:50%;left:auto;transform:translateX(50%);border-radius:14px}
+body[data-lay=party] #bubble.pop{animation:none}
+body[data-lay=home] #bubble,body[data-lay=full] #bubble{display:none}
+
+/* اللوحة السفلية */
+#ui{position:absolute;inset:0;pointer-events:none;z-index:3}
+#ui>*{pointer-events:auto}
+.sheet{position:absolute;right:0;left:0;bottom:0;max-height:56%;overflow:auto;background:var(--panel);border-top:2px solid var(--line);border-radius:20px 20px 0 0;padding:14px 16px calc(14px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:9px;backdrop-filter:blur(6px)}
+body[data-lay=gates] .sheet{max-height:52%} body[data-lay=party] .sheet{max-height:60%}
+.sheet h2{font-size:18px;line-height:1.5;text-wrap:balance}
+.shead{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.qmeta{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--mute);font-variant-numeric:tabular-nums}
+.qact{display:flex;gap:10px;justify-content:space-between;margin-top:4px;position:sticky;bottom:-14px;background:linear-gradient(#0d163a00,#0d163a 30%);padding:10px 0 4px}
+.qact .pri{flex:1}
+.opts{display:grid;gap:8px}.opts.two{grid-template-columns:1fr 1fr}
+.opt{min-height:48px;padding:8px 14px;border-radius:12px;border:1.5px solid var(--line);background:var(--panel2);text-align:start;cursor:pointer;font-weight:600}
+.opts.two .opt{text-align:center;font-size:18px}
+.opt.ok,.slot.ok{border-color:var(--ok);background:#14532d;color:#d7ffe4}
+.opt.bad,.slot.bad{border-color:var(--bad);background:#5b1f2a;color:#ffe1e1;opacity:.8}
+.locked .opt,.locked .mi,.locked .oi,.locked .slot,.locked .chip2{cursor:default}
+.fb{border-radius:12px;padding:9px 12px;border:1.5px solid var(--line);font-size:14.5px}
+.fb[hidden]{display:none}
+.fb b{display:block;font-size:15.5px}
+.fb.ok{border-color:var(--ok);background:#0f3d24}.fb.ok b{color:var(--ok)}
+.fb.retry,.fb.hint{border-color:var(--sun);background:#3f3210}.fb.retry b,.fb.hint b{color:var(--sun)}
+.fb.bad{border-color:var(--bad);background:#43192a}.fb.bad b{color:var(--bad)}
+.match{display:grid;grid-template-columns:1fr 1.5fr;gap:8px}.match>div{display:grid;gap:7px;align-content:start}
+.mi,.oi{position:relative;min-height:46px;padding:6px 10px;border-radius:10px;border:1.5px solid var(--line);background:var(--panel2);cursor:pointer;font-size:14px;font-weight:600;text-align:start}
+.mi.sel{border-color:var(--sun);box-shadow:0 0 0 2px var(--sun)}
+.mi[data-n]::after,.oi[data-n]::after{content:attr(data-n);position:absolute;top:-8px;inset-inline-end:-6px;width:22px;height:22px;border-radius:50%;background:var(--sun);color:#04122e;font-size:13px;font-weight:800;display:grid;place-items:center}
+.mi.c0{border-color:#38e1ff}.mi.c1{border-color:#ffd166}.mi.c2{border-color:#ff7ac3}.mi.c3{border-color:#4ade80}
+.mi.c0::after{background:#38e1ff}.mi.c2::after{background:#ff7ac3}.mi.c3::after{background:#4ade80}
+.order{display:grid;gap:8px}.oi.sel{border-color:var(--cy);background:#123a66}
+.slots,.chips{display:flex;gap:6px;justify-content:center;align-items:center;flex-wrap:wrap}
+.slots i{font-size:26px;font-weight:800;font-style:normal;color:var(--sun)}
+.slot{width:64px;height:52px;border-radius:12px;border:2px dashed var(--line);background:#0a1230;font:800 20px ui-monospace,Consolas,monospace;cursor:pointer}
+.slot.full{border-style:solid;border-color:var(--cy)}
+.chip2{min-width:60px;height:48px;border-radius:12px;border:1.5px solid var(--vio);background:#2a2470;font:800 19px ui-monospace,Consolas,monospace;cursor:grab;touch-action:none}
+.chip2.used{opacity:.25}
+.chip2.ghost{position:fixed;transform:translate(-50%,-50%);pointer-events:none;z-index:50;opacity:.9}
+.chain{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-height:38px}
+.chain span{background:#2a2470;border:1.5px solid var(--vio);border-radius:10px;padding:2px 10px;font-weight:700}.chain i{font-style:normal;color:var(--sun)}
+.bits{margin:6px auto;border-collapse:collapse;font:700 14px ui-monospace,Consolas,monospace}
+.bits th{color:var(--mute);font-size:11px;padding:0 5px}.bits td{border:1.5px solid var(--line);width:30px;height:30px;text-align:center;border-radius:4px}
+.bits td.on{background:var(--sun);color:#04122e}
+.info{border:1.5px solid var(--cy);border-radius:12px;padding:8px 12px;background:#0b2a4a;font-size:14.5px}
+
+/* الرئيسية */
+.scr.home{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;pointer-events:none!important}
+.hero{padding:54px 18px 34px;text-align:center;background:linear-gradient(#070d24fa 72%,#070d2400);pointer-events:none}
+.kick{font-size:13px;letter-spacing:.3em;color:var(--cy);font-weight:800;direction:ltr}
+.hero h1{font-size:clamp(28px,8vw,44px);line-height:1.35;text-shadow:0 0 24px #38e1ff88;text-wrap:balance}
+.lead{font-size:14.5px;max-width:34em;margin:4px auto 0;color:#d4def8}.lead b{color:var(--sun);display:block}
+.menu{pointer-events:auto;padding:26px 16px calc(10px + env(safe-area-inset-bottom));background:linear-gradient(#070d2400,#070d24f2 22%);display:flex;flex-direction:column;gap:9px;max-width:520px;width:100%;margin:0 auto}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.grid2 .btn{font-size:14.5px;padding:6px 8px}
+.who{font-size:14px;text-align:center;color:var(--mute)}.who b{color:var(--ink)}
+.credit{text-align:center;font-size:13.5px;font-weight:700;color:var(--sun);line-height:1.5}
+
+/* بطاقات المستويات */
+.cards{display:grid;gap:9px}
+.card{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;border:1.5px solid var(--line);background:var(--panel2);text-align:start;width:100%}
+button.card{cursor:pointer}
+.card .num{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:20px;color:#04122e;flex:none}
+.lv1 .num{background:#2dd4bf}.lv2 .num{background:#ffc94d}.lv3 .num{background:#ff7ac3}
+.cbody{flex:1;display:grid;min-width:0}.cbody small{color:var(--mute);font-size:12.5px}.cbody .en{color:var(--cy)}
+.card .st{color:var(--sun);font-size:18px;white-space:nowrap}
+.card.locked{opacity:.55}
+.party{text-align:center;align-items:stretch}.party .tag{align-self:center}
+.stars{font-size:46px;line-height:1;letter-spacing:8px;color:#33437e;direction:ltr}
+.stars .on.pop{color:var(--sun);animation:starpop .45s ease-out;text-shadow:0 0 18px #ffd166}
+@keyframes starpop{from{transform:scale(2.2);opacity:0}}.stars span{display:inline-block}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px}
+.stats div{background:#0a1230;border:1.5px solid var(--line);border-radius:12px;padding:6px 4px;text-align:center}
+.stats b{direction:ltr;unicode-bidi:isolate;display:block;font-size:20px;color:var(--cy);font-variant-numeric:tabular-nums}.stats small{font-size:11.5px;color:var(--mute);line-height:1.3;display:block}
+
+/* الصفحات الكاملة */
+.page{position:absolute;inset:0;overflow:auto;background:#070d24ee;padding:60px max(16px,calc(50% - 440px)) 40px;display:flex;flex-direction:column;gap:12px}
+.page>*{flex-shrink:0}
+.page.narrow{padding-inline:max(16px,calc(50% - 240px))}
+.page h2{font-size:21px}.page h3{font-size:16.5px;color:var(--sun);margin-top:8px}
+.how{padding-inline-start:22px;display:grid;gap:6px}
+.note{font-size:13.5px;border:1.5px solid var(--line);border-radius:12px;padding:8px 12px;background:#0d163a}
+.note.ok{border-color:var(--ok)}.note.bad{border-color:var(--bad)} b.bad{color:var(--bad)}
+.tw{overflow-x:auto;border:1.5px solid var(--line);border-radius:12px}
+.tb{width:100%;border-collapse:collapse;font-size:14px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.tb th{background:#15235a;font-size:12.5px;color:var(--mute);padding:8px 10px;text-align:start}
+.tb td{padding:8px 10px;border-top:1px solid #1f3070}.tb tr.me td{background:#123a66;font-weight:700}
+.medals{display:flex;flex-wrap:wrap;gap:10px}.medal{font-size:34px;text-align:center;background:#0d163a;border:1.5px solid var(--line);border-radius:14px;padding:6px 12px;line-height:1.3}.medal small{display:block;font-size:11.5px;color:var(--mute)}
+.log{list-style:none;padding:0;display:grid;gap:4px;font-size:14px}.log time{color:var(--mute);font-size:12px;margin-inline-end:6px}
+.tabs{display:flex;gap:6px;overflow-x:auto}.tab{min-height:42px;padding:4px 14px;border-radius:10px 10px 0 0;border:1.5px solid var(--line);background:transparent;cursor:pointer;font-weight:700;white-space:nowrap}.tab.on{background:var(--panel2);border-color:var(--cy);color:var(--cy)}
+label{font-size:14px;font-weight:700;display:block;margin-top:8px}
+input[type=text],input[type=password],input[type=number],input[type=url],select,textarea{width:100%;min-height:46px;border-radius:10px;border:1.5px solid var(--line);background:#0a1230;padding:8px 12px;margin-top:4px}
+textarea{min-height:0;font-size:13px}
+.form{display:grid;gap:2px}.form input+input{margin-top:6px}
+fieldset{border:1.5px solid var(--line);border-radius:10px;padding:6px 12px;margin-top:8px}fieldset label,.qlist label{font-weight:400;display:flex;gap:8px;align-items:flex-start;margin-top:4px}
+input[type=checkbox]{width:20px;height:20px;flex:none;margin-top:4px}
+.qlist{list-style:none;padding:0;display:grid;gap:6px;font-size:13.5px}.qlist li{display:flex;justify-content:space-between;gap:8px;align-items:center;border-bottom:1px solid #1f3070;padding-bottom:5px}
+details{border:1.5px solid var(--line);border-radius:10px;padding:6px 12px;background:#0d163a}summary{cursor:pointer;font-weight:700;min-height:34px}
+details p{font-size:14px;margin-top:4px}
+pre{font:12px ui-monospace,Consolas,monospace;background:#050a1c;border-radius:8px;padding:10px;overflow-x:auto;white-space:pre-wrap;word-break:break-all;margin-top:6px}
+.filebtn{margin:0}
+.certimg{max-width:100%;border-radius:10px;border:1.5px solid var(--line);display:block}
+.rev{padding-inline-start:20px;display:grid;gap:6px;font-size:14.5px}
+
+#toast{position:absolute;bottom:18px;left:50%;transform:translate(-50%,30px);background:#fff;color:#0b1538;padding:8px 16px;border-radius:12px;font-weight:700;font-size:14px;opacity:0;transition:.25s;pointer-events:none;z-index:30;max-width:92%;text-align:center}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+#modal{position:absolute;inset:0;background:#030718cc;z-index:20;display:grid;place-items:center;padding:16px;overflow:auto}
+#modal[hidden]{display:none}
+.mbox{background:#0d163a;border:2px solid var(--line);border-radius:18px;padding:18px;width:min(480px,100%);max-height:100%;overflow:auto}
+.mbox h3{font-size:18px;color:var(--sun)}
+#printarea{display:none}
+
+/* الشاشات العريضة: اللوحة جانبية */
+body.wide .sheet{top:0;bottom:0;right:auto;width:min(460px,42%);max-height:none!important;border-radius:0;border-top:0;border-right:2px solid var(--line);padding-top:20px;justify-content:center}
+body.wide #hud{left:min(460px,42%);padding-left:10px}
+body.wide #bubble{right:210px;left:auto;top:84px}
+body.wide .scr.home{right:auto;width:min(460px,42%);background:#070d24e6;justify-content:center}
+body.wide .hero,body.wide .menu{background:none}
+@media (max-height:640px){.lead{display:none}.hero{padding-top:50px}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01s!important;transition:none!important}}
+@media print{body>*:not(#printarea){display:none!important}#printarea{display:block}#printarea img{width:100%}body{background:#fff;overflow:visible}@page{size:landscape;margin:8mm}}
+
+</style>
+</head>
+<body data-lay="home">
+<canvas id="gl" aria-label="مدينة رقمية ثلاثية الأبعاد"></canvas>
+<div id="labels" aria-hidden="true"></div>
+<div id="fx" aria-hidden="true"></div>
+<header id="hud" hidden>
+  <button class="ic" id="b-home" aria-label="الرئيسية">🏠</button>
+  <div class="hud-mid"><div id="hud-title"></div><span class="bar"><i id="hud-bar"></i></span></div>
+  <span class="chipx">⭐ <b id="hud-pts">0</b></span>
+  <span class="chipx"><span class="ok">✔ <b id="hud-ok">0</b></span> <span class="bad">✘ <b id="hud-bad">0</b></span></span>
+</header>
+<button class="ic" id="b-snd" aria-label="تشغيل أو إيقاف الصوت">🔊</button>
+<div id="bubble" hidden role="status"></div>
+<main id="ui"></main>
+<div id="modal" hidden></div>
+<div id="toast" role="status"></div>
+<div id="printarea"></div>
+<script>
+'use strict';
+/* ===== محرك ثلاثي الأبعاد خفيف مبني على WebGL مباشرة (بدون مكتبات خارجية) ===== */
+const E = (() => {
+  const cv = document.getElementById('gl');
+  const gl = cv.getContext('webgl', { antialias: true, alpha: false, powerPreference: 'low-power' });
+  const api = { ok: !!gl, cityGlow: 0.25, onFrame: null, onPick: null, labels: [] };
+  if (!gl) return api;
+
+  // ---------- رياضيات المصفوفات ----------
+  const mul = (a, b) => {
+    const o = new Float32Array(16);
+    for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++)
+      o[c * 4 + r] = a[r] * b[c * 4] + a[4 + r] * b[c * 4 + 1] + a[8 + r] * b[c * 4 + 2] + a[12 + r] * b[c * 4 + 3];
+    return o;
+  };
+  const rotm = (r) => {
+    const cx = Math.cos(r[0]), sx = Math.sin(r[0]), cy = Math.cos(r[1]), sy = Math.sin(r[1]), cz = Math.cos(r[2]), sz = Math.sin(r[2]);
+    const o = new Float32Array(16);
+    o[0] = cy * cz + sy * sx * sz; o[1] = cx * sz; o[2] = -sy * cz + cy * sx * sz;
+    o[4] = -cy * sz + sy * sx * cz; o[5] = cx * cz; o[6] = sy * sz + cy * sx * cz;
+    o[8] = sy * cx; o[9] = -sx; o[10] = cy * cx; o[15] = 1;
+    return o;
+  };
+  const trs = (p, r, s) => {
+    const o = rotm(r);
+    o[0] *= s[0]; o[1] *= s[0]; o[2] *= s[0];
+    o[4] *= s[1]; o[5] *= s[1]; o[6] *= s[1];
+    o[8] *= s[2]; o[9] *= s[2]; o[10] *= s[2];
+    o[12] = p[0]; o[13] = p[1]; o[14] = p[2];
+    return o;
+  };
+  const persp = (fov, asp, n, f) => {
+    const t = 1 / Math.tan(fov / 2), o = new Float32Array(16);
+    o[0] = t / asp; o[5] = t; o[10] = (f + n) / (n - f); o[11] = -1; o[14] = 2 * f * n / (n - f);
+    return o;
+  };
+  const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+  const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const norm = (a) => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
+  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const lookAt = (e, c) => {
+    const f = norm(sub(c, e)), s = norm(cross(f, [0, 1, 0])), u = cross(s, f), o = new Float32Array(16);
+    o[0] = s[0]; o[4] = s[1]; o[8] = s[2]; o[1] = u[0]; o[5] = u[1]; o[9] = u[2];
+    o[2] = -f[0]; o[6] = -f[1]; o[10] = -f[2];
+    o[12] = -dot(s, e); o[13] = -dot(u, e); o[14] = dot(f, e); o[15] = 1;
+    return { m: o, f, s, u };
+  };
+
+  // ---------- الشكل الهندسي ----------
+  function mkGeo(v, idx) {
+    const vb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, vb); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(v), gl.STATIC_DRAW);
+    const ib = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ib); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(idx), gl.STATIC_DRAW);
+    return { vb, ib, n: idx.length };
+  }
+  function box() {
+    const v = [], idx = [];
+    const faces = [[0, 0, 1, 1, 0, 0, 0, 1, 0], [0, 0, -1, -1, 0, 0, 0, 1, 0], [1, 0, 0, 0, 0, -1, 0, 1, 0], [-1, 0, 0, 0, 0, 1, 0, 1, 0], [0, 1, 0, 1, 0, 0, 0, 0, -1], [0, -1, 0, 1, 0, 0, 0, 0, 1]];
+    faces.forEach((f, i) => {
+      const n = [f[0], f[1], f[2]], a = [f[3], f[4], f[5]], b = [f[6], f[7], f[8]];
+      [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(([x, y]) => {
+        v.push((n[0] + a[0] * x + b[0] * y) / 2, (n[1] + a[1] * x + b[1] * y) / 2, (n[2] + a[2] * x + b[2] * y) / 2, n[0], n[1], n[2]);
+      });
+      const o = i * 4; idx.push(o, o + 1, o + 2, o, o + 2, o + 3);
+    });
+    return mkGeo(v, idx);
+  }
+  function cyl(seg, topR) {
+    const v = [], idx = [];
+    for (let i = 0; i <= seg; i++) {
+      const a = i / seg * Math.PI * 2, c = Math.cos(a), s = Math.sin(a);
+      v.push(c * .5, -.5, s * .5, c, topR < 1 ? .5 : 0, s, c * .5 * topR, .5, s * .5 * topR, c, topR < 1 ? .5 : 0, s);
+    }
+    for (let i = 0; i < seg; i++) { const o = i * 2; idx.push(o, o + 1, o + 3, o, o + 3, o + 2); }
+    const cap = (y, r, ny) => {
+      const base = v.length / 6; v.push(0, y, 0, 0, ny, 0);
+      for (let i = 0; i <= seg; i++) { const a = i / seg * Math.PI * 2; v.push(Math.cos(a) * r, y, Math.sin(a) * r, 0, ny, 0); }
+      for (let i = 1; i <= seg; i++) ny > 0 ? idx.push(base, base + i + 1, base + i) : idx.push(base, base + i, base + i + 1);
+    };
+    cap(-.5, .5, -1); if (topR > 0) cap(.5, .5 * topR, 1);
+    return mkGeo(v, idx);
+  }
+  function sphere(lo, la) {
+    const v = [], idx = [];
+    for (let j = 0; j <= la; j++) for (let i = 0; i <= lo; i++) {
+      const t = j / la * Math.PI, p = i / lo * Math.PI * 2, x = Math.sin(t) * Math.cos(p), y = Math.cos(t), z = Math.sin(t) * Math.sin(p);
+      v.push(x * .5, y * .5, z * .5, x, y, z);
+    }
+    for (let j = 0; j < la; j++) for (let i = 0; i < lo; i++) { const a = j * (lo + 1) + i, b = a + lo + 1; idx.push(a, a + 1, b, b, a + 1, b + 1); }
+    return mkGeo(v, idx);
+  }
+  function torus(R, r, seg, tube) {
+    const v = [], idx = [];
+    for (let i = 0; i <= seg; i++) for (let j = 0; j <= tube; j++) {
+      const a = i / seg * Math.PI * 2, b = j / tube * Math.PI * 2, cx = Math.cos(a), sz = Math.sin(a);
+      const nx = Math.cos(b) * cx, ny = Math.sin(b), nz = Math.cos(b) * sz;
+      v.push((R + r * Math.cos(b)) * cx, r * Math.sin(b), (R + r * Math.cos(b)) * sz, nx, ny, nz);
+    }
+    for (let i = 0; i < seg; i++) for (let j = 0; j < tube; j++) { const a = i * (tube + 1) + j, b = a + tube + 1; idx.push(a, a + 1, b, b, a + 1, b + 1); }
+    return mkGeo(v, idx);
+  }
+  const G = { box: box(), cyl: cyl(18, 1), cone: cyl(14, 0), sphere: sphere(14, 10), torus: torus(.5, .045, 28, 6) };
+
+  // ---------- المظلّل ----------
+  const VS = 'attribute vec3 aP;attribute vec3 aN;uniform mat4 uVP,uM,uR;varying vec3 vN;varying vec3 vW;void main(){vec4 w=uM*vec4(aP,1.);vW=w.xyz;vN=(uR*vec4(aN,0.)).xyz;gl_Position=uVP*w;}';
+  const FS = 'precision mediump float;uniform vec3 uC,uL,uCam,uFog;uniform float uE,uA;uniform vec2 uFR;varying vec3 vN;varying vec3 vW;void main(){vec3 n=normalize(vN);float d=max(dot(n,uL),0.);float h=.5+.5*n.y;vec3 lit=uC*(.36+.26*h+.62*d);vec3 v=normalize(uCam-vW);float rim=pow(1.-max(dot(n,v),0.),3.);vec3 c=mix(lit,uC*1.3+.1,uE)+rim*.16*uC;float f=clamp((distance(uCam,vW)-uFR.x)/(uFR.y-uFR.x),0.,1.);gl_FragColor=vec4(mix(c,uFog,f),uA);}';
+  const sh = (t, s) => { const o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o); return o; };
+  const pr = gl.createProgram();
+  gl.attachShader(pr, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(pr); gl.useProgram(pr);
+  const U = {}; ['uVP', 'uM', 'uR', 'uC', 'uL', 'uCam', 'uFog', 'uE', 'uA', 'uFR'].forEach(n => U[n] = gl.getUniformLocation(pr, n));
+  const aP = gl.getAttribLocation(pr, 'aP'), aN = gl.getAttribLocation(pr, 'aN');
+  gl.enableVertexAttribArray(aP); gl.enableVertexAttribArray(aN);
+  gl.enable(gl.DEPTH_TEST);
+  const FOG = [0.03, 0.05, 0.15];
+
+  // ---------- شجرة المشهد ----------
+  function N(geo, color, o) {
+    const n = { geo: geo ? G[geo] : null, color: color || [1, 1, 1], em: 0, alpha: 1, pos: [0, 0, 0], rot: [0, 0, 0], scl: [1, 1, 1], ch: [], vis: true, pick: null, pickR: 1, pickY: 0, cg: false };
+    if (o) Object.assign(n, o);
+    return n;
+  }
+  const add = (p, c) => { p.ch.push(c); return c; };
+  const root = N(null);
+  let opaque = [], trans = [], picks = [];
+  function upd(n, pm, prr) {
+    if (!n.vis) return;
+    if (n.frozen && n._c) { for (const x of n._c) opaque.push(x); return; }
+    const L = trs(n.pos, n.rot, n.scl); n.wm = pm ? mul(pm, L) : L;
+    const R = rotm(n.rot); n.wr = prr ? mul(prr, R) : R;
+    const start = opaque.length;
+    if (n.geo) (n.alpha < 1 ? trans : opaque).push(n);
+    if (n.pick) picks.push(n);
+    for (const c of n.ch) upd(c, n.wm, n.wr);
+    if (n.frozen) n._c = opaque.slice(start);
+  }
+
+  // ---------- الكاميرا ----------
+  const cam = { target: [0, 1, 0], yaw: 0, pitch: .5, dist: 40, kx: 0, ky: 0 };
+  const goal = { target: [0, 1, 0], yaw: 0, pitch: .5, dist: 40, kx: 0, ky: 0 };
+  const FOV = 50 * Math.PI / 180, TAN = Math.tan(FOV / 2);
+  let Wd = 1, Hd = 1, VP = null, P = null, view = null, eye = [0, 0, 1];
+  function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    Wd = cv.clientWidth || 1; Hd = cv.clientHeight || 1;
+    cv.width = Math.round(Wd * dpr); cv.height = Math.round(Hd * dpr);
+    gl.viewport(0, 0, cv.width, cv.height);
+  }
+  window.addEventListener('resize', resize);
+  /* ضبط الكاميرا لتُظهر عرضاً/عمقاً معيناً داخل المنطقة المرئية (visW×visH بالبكسل) */
+  function setCam(c, snap) {
+    const visW = c.visW || Wd, visH = c.visH || Hd;
+    const d = Math.max((c.width || 20) / (2 * TAN * (visW / Hd)), (c.depth || 10) / (2 * TAN * (visH / Hd)), c.minDist || 6);
+    goal.target = c.target.slice(); goal.yaw = c.yaw || 0; goal.pitch = c.pitch; goal.dist = d;
+    goal.kx = c.kx || 0; goal.ky = c.ky || 0;
+    if (snap) { cam.target = goal.target.slice(); cam.yaw = goal.yaw; cam.pitch = goal.pitch; cam.dist = d; cam.kx = goal.kx; cam.ky = goal.ky; }
+  }
+  function camStep(dt) {
+    const k = 1 - Math.exp(-dt * 3.2);
+    for (let i = 0; i < 3; i++) cam.target[i] += (goal.target[i] - cam.target[i]) * k;
+    for (const p of ['yaw', 'pitch', 'dist', 'kx', 'ky']) cam[p] += (goal[p] - cam[p]) * k;
+    eye = [cam.target[0] + cam.dist * Math.sin(cam.yaw) * Math.cos(cam.pitch), cam.target[1] + cam.dist * Math.sin(cam.pitch), cam.target[2] + cam.dist * Math.cos(cam.yaw) * Math.cos(cam.pitch)];
+    view = lookAt(eye, cam.target);
+    P = persp(FOV, Wd / Hd, 0.5, 400); P[8] = -cam.kx; P[9] = -cam.ky;
+    VP = mul(P, view.m);
+  }
+  function project(p) {
+    const x = VP[0] * p[0] + VP[4] * p[1] + VP[8] * p[2] + VP[12], y = VP[1] * p[0] + VP[5] * p[1] + VP[9] * p[2] + VP[13], w = VP[3] * p[0] + VP[7] * p[1] + VP[11] * p[2] + VP[15];
+    return { x: (x / w * .5 + .5) * Wd, y: (1 - (y / w * .5 + .5)) * Hd, w };
+  }
+  /* نقطة في العالم تقابل موضعاً على الشاشة (ndc) على بعد d أمام الكاميرا */
+  function screenAnchor(px, py, d) {
+    const nx = (px / Wd) * 2 - 1 - cam.kx, ny = 1 - (py / Hd) * 2 - cam.ky;
+    const rx = nx * d * TAN * (Wd / Hd), ry = ny * d * TAN, f = view.f, s = view.s, u = view.u;
+    return [eye[0] + f[0] * d + s[0] * rx + u[0] * ry, eye[1] + f[1] * d + s[1] * rx + u[1] * ry, eye[2] + f[2] * d + s[2] * rx + u[2] * ry];
+  }
+  const unitPx = (d) => (Hd / 2) / (d * TAN);
+
+  // ---------- الرسم ----------
+  function draw(list) {
+    let last = null;
+    for (const n of list) {
+      if (n.geo !== last) {
+        last = n.geo; gl.bindBuffer(gl.ARRAY_BUFFER, last.vb); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, last.ib);
+        gl.vertexAttribPointer(aP, 3, gl.FLOAT, false, 24, 0); gl.vertexAttribPointer(aN, 3, gl.FLOAT, false, 24, 12);
+      }
+      gl.uniformMatrix4fv(U.uM, false, n.wm); gl.uniformMatrix4fv(U.uR, false, n.wr);
+      const g = n.cg ? api.cityGlow : 1;
+      gl.uniform3f(U.uC, n.color[0], n.color[1], n.color[2]); gl.uniform1f(U.uE, Math.min(1, n.em * g)); gl.uniform1f(U.uA, n.alpha);
+      gl.drawElements(gl.TRIANGLES, last.n, gl.UNSIGNED_SHORT, 0);
+    }
+  }
+  let lastT = 0, running = true;
+  function frame(t) {
+    requestAnimationFrame(frame);
+    if (document.hidden || !running) { lastT = t; return; }
+    const dt = Math.min(.05, (t - lastT) / 1000 || 0.016); lastT = t;
+    if (cv.clientWidth !== Wd || cv.clientHeight !== Hd) resize();
+    camStep(dt);
+    if (api.onFrame) api.onFrame(dt, t / 1000);
+    opaque = []; trans = []; picks = [];
+    upd(root, null, null);
+    gl.clearColor(FOG[0], FOG[1], FOG[2], 1); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.uniformMatrix4fv(U.uVP, false, VP);
+    gl.uniform3f(U.uL, .35, .8, .48); gl.uniform3f(U.uCam, eye[0], eye[1], eye[2]); gl.uniform3f(U.uFog, FOG[0], FOG[1], FOG[2]);
+    gl.uniform2f(U.uFR, cam.dist * 1.15 + 14, cam.dist * 1.15 + 80);
+    gl.disable(gl.BLEND); gl.depthMask(true); draw(opaque);
+    gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false); draw(trans); gl.depthMask(true);
+    // الملصقات النصية فوق المشهد
+    for (const l of api.labels) {
+      if (!l.show || !l.node.wm) { if (l.on) { l.el.style.display = 'none'; l.on = false; } continue; }
+      const m = l.node.wm, s = project([m[12], m[13] + (l.y || 0), m[14]]);
+      const vis = s.w > 0 && s.x > -40 && s.x < Wd + 40 && s.y > 40 && s.y < Hd * (1 - Math.max(0, cam.ky)) + 30;
+      if (vis) { if (l.hw) s.x = Math.max(l.hw + 3, Math.min(Wd - l.hw - 3, s.x)); l.el.style.display = 'block'; l.el.style.transform = `translate(-50%,-50%) translate(${s.x.toFixed(1)}px,${s.y.toFixed(1)}px)`; if (!l.on) { l.on = true; l.hw = l.el.offsetWidth / 2; } }
+      else if (l.on) { l.el.style.display = 'none'; l.on = false; }
+    }
+  }
+  function pickAt(x, y) {
+    let best = null, bd = 1e9;
+    for (const n of picks) {
+      const m = n.wm, s = project([m[12], m[13] + n.pickY, m[14]]); if (s.w <= 0) continue;
+      const r = Math.max(26, n.pickR * (Hd / 2) * P[5] / s.w), d = Math.hypot(s.x - x, s.y - y);
+      if (d < r && d < bd) { bd = d; best = n.pick; }
+    }
+    return best;
+  }
+  // سحب لتدوير الكاميرا + نقر للاختيار
+  let pd = null;
+  cv.addEventListener('pointerdown', e => { pd = { x: e.clientX, y: e.clientY, yaw: goal.yaw, moved: false }; });
+  cv.addEventListener('pointermove', e => {
+    if (!pd) return; const dx = e.clientX - pd.x;
+    if (Math.abs(dx) > 8 || Math.abs(e.clientY - pd.y) > 8) pd.moved = true;
+    if (pd.moved && api.orbit) goal.yaw = Math.max(-0.6, Math.min(0.6, pd.yaw - dx * 0.005));
+  });
+  const up = e => {
+    if (!pd) return; const m = pd.moved; pd = null;
+    if (!m && api.onPick) { const r = cv.getBoundingClientRect(); const id = pickAt(e.clientX - r.left, e.clientY - r.top); if (id) api.onPick(id); }
+  };
+  cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', () => { pd = null; });
+
+  function label(node, text, cls, y) {
+    const el = document.createElement('div'); el.className = 'lbl ' + (cls || ''); el.textContent = text; el.style.display = 'none';
+    document.getElementById('labels').appendChild(el);
+    const l = { node, el, y: y || 0, show: false, on: false, grp: cls }; api.labels.push(l); return l;
+  }
+  resize(); requestAnimationFrame(frame);
+  Object.assign(api, { N, add, root, cam, goal, setCam, project, screenAnchor, unitPx, label, pickAt, size: () => [Wd, Hd], getEye: () => eye, orbit: true });
+  return api;
+})();
+
+/* ===== المدينة الرقمية، الشبكات، الموجّهات، الحزم، الروبوت ===== */
+const W = (() => {
+  if (!E.ok) return { ok: false, tick() { }, mode() { }, mark() { }, clearMarks() { }, labels() { }, robotAct() { }, fly(p, d, cb) { cb && cb(); }, setFlow() { }, setGlow() { }, setCubes() { }, showArrows() { }, portals() { }, pcs: {}, routers: {}, RNAME: {}, robot: {} };
+  const { N, add, root } = E;
+  const hex = h => [parseInt(h.slice(1, 3), 16) / 255, parseInt(h.slice(3, 5), 16) / 255, parseInt(h.slice(5, 7), 16) / 255];
+  const COL = { A: hex('#2dd4bf'), B: hex('#ffc94d'), C: hex('#ff7ac3'), router: hex('#8b7bff'), cy: hex('#38e1ff'), white: hex('#eef3ff'), navy: hex('#101a44'), sun: hex('#ffd166'), red: hex('#ff5d6c'), orange: hex('#ff9f43') };
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+
+  // ---------- الأرض والمباني (مجموعة ثابتة تُحسب مرة واحدة) ----------
+  const city = add(root, N(null, null, { frozen: true }));
+  add(city, N('box', hex('#0a1436'), { pos: [0, -.12, -6], scl: [150, .2, 150] }));
+  for (let i = -72; i <= 72; i += 4) {
+    add(city, N('box', hex('#2a55c8'), { pos: [i, 0, -6], scl: [.07, .02, 150], em: .9, cg: true }));
+    add(city, N('box', hex('#2a55c8'), { pos: [0, 0, i - 6], scl: [150, .02, .07], em: .9, cg: true }));
+  }
+  const bcols = ['#16235c', '#1b2a6e', '#231f63', '#132a5a', '#2a2470'], wcols = ['#38e1ff', '#ff7ac3', '#ffd166', '#8b7bff', '#2dd4bf'];
+  let made = 0, guard = 0; const placed = [];
+  while (made < 46 && guard++ < 900) {
+    const x = (rnd() * 2 - 1) * 40, z = -44 + rnd() * 50;
+    if (Math.abs(x) < 14.5 && z > -15) continue;
+    if (placed.some(p => Math.abs(p[0] - x) < 4.6 && Math.abs(p[1] - z) < 4.6)) continue;
+    placed.push([x, z]); made++;
+    const w = 2.2 + rnd() * 2.2, d = 2.2 + rnd() * 2.2, h = 3 + rnd() * 10;
+    add(city, N('box', hex(bcols[made % 5]), { pos: [x, h / 2, z], scl: [w, h, d] }));
+    const wc = hex(wcols[Math.floor(rnd() * 5)]);
+    for (let y = 1.2; y < h - .4; y += 1.5 + rnd()) add(city, N('box', wc, { pos: [x, y, z], scl: [w + .06, .22, d + .06], em: 1, cg: true }));
+    if (rnd() > .55) { add(city, N('cyl', hex('#3b4a8f'), { pos: [x, h + .7, z], scl: [.08, 1.4, .08] })); add(city, N('sphere', COL.red, { pos: [x, h + 1.5, z], scl: [.28, .28, .28], em: 1, cg: true })); }
+  }
+
+  // ---------- الشبكات والأجهزة ----------
+  const nets = add(root, N(null));
+  const pcs = {}, routers = {}, marks = {}, pos = {};
+  const NET = { A: { c: [-7, 1], name: 'الشبكة (أ)' }, B: { c: [0, -7.5], name: 'الشبكة (ب)' }, C: { c: [7, 1], name: 'الشبكة (ج)' } };
+  const PCS = [['A1', -8.8, -.4, '192.168.5.10'], ['A2', -8.6, 2.5, '192.168.5.11'], ['A3', -6.2, 3.0, '192.168.5.12'],
+  ['B1', -2.3, -8.2, '192.168.10.20'], ['B2', 0, -9.5, '192.168.10.21'], ['B3', 2.3, -8.2, '192.168.10.22'],
+  ['C1', 8.8, -.4, '192.168.15.60'], ['C2', 8.6, 2.5, '192.168.15.61'], ['C3', 6.2, 3.0, '192.168.15.62']];
+  const RT = { R1: [-3.7, .3], R2: [0, -3.3], R3: [3.7, .3], R4: [-2.6, 4.7], R5: [2.6, 4.7] };
+  const RNAME = { R1: 'موجّه 1', R2: 'موجّه 2', R3: 'موجّه 3', R4: 'موجّه 4', R5: 'موجّه 5' };
+  const dim = (c, k) => [c[0] * k, c[1] * k, c[2] * k];
+  function ring(parent, r) { return add(parent, N('torus', COL.sun, { pos: [0, .12, 0], scl: [r, 2.2, r], em: 1, vis: false })); }
+  for (const k in NET) {
+    const n = NET[k];
+    const pl = add(nets, N('cyl', dim(COL[k], .28), { pos: [n.c[0], .1, n.c[1]], scl: [6.6, .2, 6.6], em: .15 }));
+    add(nets, N('torus', COL[k], { pos: [n.c[0], .22, n.c[1]], scl: [6.6, 1.6, 6.6], em: .9 }));
+    n.label = E.label(add(nets, N(null, null, { pos: [n.c[0], .4, n.c[1] - 3.9] })), n.name, 'net net' + k, 0);
+  }
+  function link(a, b, col, th, em) {
+    const dx = b[0] - a[0], dz = b[1] - a[1], len = Math.hypot(dx, dz);
+    return add(nets, N('box', col, { pos: [(a[0] + b[0]) / 2, .28, (a[1] + b[1]) / 2], rot: [0, Math.atan2(dx, dz), 0], scl: [th, .06, len], em: em }));
+  }
+  const netRouter = { A: 'R1', B: 'R2', C: 'R3' };
+  const flowPaths = [];
+  for (const [id, x, z, ip] of PCS) {
+    const k = id[0], g = add(nets, N(null, null, { pos: [x, .2, z], pick: id, pickR: 1.15, pickY: .8 }));
+    add(g, N('box', hex('#c9d4f5'), { pos: [0, .06, 0], scl: [1.1, .12, .7] }));
+    add(g, N('cyl', hex('#9fb0e6'), { pos: [0, .35, 0], scl: [.16, .5, .16] }));
+    add(g, N('box', hex('#e6ecff'), { pos: [0, 1.05, 0], scl: [1.55, 1.05, .16] }));
+    const scr = add(g, N('box', COL[k], { pos: [0, 1.05, .09], scl: [1.35, .85, .04], em: .85 }));
+    add(g, N('box', hex('#aab8e8'), { pos: [0, .05, .62], scl: [1.0, .07, .34] }));
+    marks[id] = ring(g, 2.5); pcs[id] = { id, net: k, ip, node: g, scr }; pos[id] = [x, z];
+    pcs[id].label = E.label(g, ip, 'ip', id[1] === '2' ? -.75 : 2.05);
+    link([x, z], RT[netRouter[k]], dim(COL[k], .7), .09, .5);
+    flowPaths.push([[x, z], RT[netRouter[k]]]);
+  }
+  for (const id in RT) {
+    const [x, z] = RT[id], g = add(nets, N(null, null, { pos: [x, .2, z], pick: id, pickR: 1.05, pickY: .5 }));
+    add(g, N('cyl', COL.router, { pos: [0, .3, 0], scl: [1.7, .6, 1.7] }));
+    add(g, N('cyl', hex('#b9afff'), { pos: [0, .66, 0], scl: [1.25, .14, 1.25] }));
+    const tips = [];
+    for (const s of [-1, 1]) { add(g, N('cyl', hex('#d8d3ff'), { pos: [s * .45, 1.1, 0], scl: [.07, .8, .07] })); tips.push(add(g, N('sphere', COL.cy, { pos: [s * .45, 1.55, 0], scl: [.2, .2, .2], em: 1 }))); }
+    for (let i = -1; i <= 1; i++) add(g, N('box', COL.sun, { pos: [i * .3, .3, .86], scl: [.14, .1, .06], em: 1 }));
+    marks[id] = ring(g, 2.5); routers[id] = { id, node: g, tips }; pos[id] = [x, z];
+    routers[id].label = E.label(g, RNAME[id], 'rt', 2.1);
+  }
+  const RL = [['R1', 'R2'], ['R2', 'R3'], ['R1', 'R4'], ['R4', 'R5'], ['R5', 'R3']];
+  for (const [a, b] of RL) { link(RT[a], RT[b], COL.cy, .16, .85); flowPaths.push([RT[a], RT[b]]); }
+
+  // حزم البيانات المتحركة (تتعطل وتصبح حمراء عندما تكون الشبكة معطلة)
+  const flows = flowPaths.map((p, i) => ({ p, t: (i * .37) % 1, sp: .25 + (i % 4) * .06, node: add(nets, N('box', COL.sun, { scl: [.3, .3, .3], em: 1 })), i }));
+  let flowFrac = 0;
+  // أسهم المسار
+  const arrows = []; for (let i = 0; i < 8; i++) arrows.push(add(nets, N('cone', COL.sun, { scl: [.5, .9, .5], em: 1, vis: false })));
+  function showArrows(pts) {
+    arrows.forEach(a => a.vis = false);
+    if (!pts) return;
+    for (let i = 0; i < pts.length - 1 && i < 8; i++) {
+      const a = pts[i], b = pts[i + 1], n = arrows[i];
+      n.vis = true; n.pos = [(a[0] + b[0]) / 2, 1.0, (a[1] + b[1]) / 2]; n.rot = [Math.PI / 2, Math.atan2(b[0] - a[0], b[1] - a[1]), 0];
+    }
+  }
+  // الحزمة البطلة التي ترسلها الطالبة
+  const hero = add(nets, N('box', COL.white, { scl: [.6, .6, .6], em: 1, vis: false }));
+  const trail = [0, 1, 2, 3].map(i => add(nets, N('box', COL.sun, { scl: [.42 - i * .08, .42 - i * .08, .42 - i * .08], em: 1, alpha: .75 - i * .15, vis: false })));
+  let flight = null;
+  const along = (pts, t) => {
+    let tot = 0; const L = []; for (let i = 0; i < pts.length - 1; i++) { const l = Math.hypot(pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1]); L.push(l); tot += l; }
+    let d = Math.max(0, Math.min(1, t)) * tot;
+    for (let i = 0; i < L.length; i++) { if (d <= L[i] || i === L.length - 1) { const k = L[i] ? d / L[i] : 0; return [pts[i][0] + (pts[i + 1][0] - pts[i][0]) * k, pts[i][1] + (pts[i + 1][1] - pts[i][1]) * k]; } d -= L[i]; }
+    return pts[0];
+  };
+  function fly(ids, dur, cb) { const pts = ids.map(i => pos[i]); showArrows(pts); flight = { pts, t: 0, dur: dur || 3, cb }; hero.vis = true; trail.forEach(t => t.vis = true); }
+
+  // ---------- مكعبات عنوان IP (المستوى الثاني) ----------
+  const lab = add(root, N(null, null, { vis: false }));
+  const cubes = [], ccols = ['#38e1ff', '#ffd166', '#ff7ac3', '#2dd4bf'];
+  for (let i = 0; i < 4; i++) {
+    const g = add(lab, N(null, null, { pos: [-4.8 + i * 3.2, 5, 1], pick: 'Q' + i, pickR: 1.3 }));
+    const c = add(g, N('box', hex(ccols[i]), { scl: [1.9, 1.9, 1.9], em: .45 }));
+    add(g, N('box', COL.white, { scl: [2.05, .08, 2.05], em: 1 }));
+    marks['Q' + i] = add(g, N('torus', COL.sun, { pos: [0, -1.3, 0], scl: [3, 2.4, 3], em: 1, vis: false }));
+    cubes.push({ g, c, label: E.label(g, '', 'cube', 1.9) });
+    if (i < 3) add(lab, N('sphere', COL.white, { pos: [-3.2 + i * 3.2, 4.1, 1], scl: [.35, .35, .35], em: 1 }));
+  }
+  function setCubes(vals) { cubes.forEach((c, i) => { c.label.el.textContent = vals ? vals[i] : ''; }); }
+
+  // ---------- بوابات المستويات ----------
+  const gates = add(root, N(null, null, { vis: false })), portal = [];
+  const pcol = [COL.A, COL.B, COL.C];
+  for (let i = 0; i < 3; i++) {
+    const g = add(gates, N(null, null, { pos: [-5 + i * 5, 2.4, 8], pick: 'P' + (i + 1), pickR: 1.9 }));
+    const r = add(g, N('torus', pcol[i], { rot: [Math.PI / 2, 0, 0], scl: [3.6, 3.4, 3.6], em: 1 }));
+    const d = add(g, N('cyl', pcol[i], { rot: [Math.PI / 2, 0, 0], scl: [3.3, .05, 3.3], em: .8, alpha: .32 }));
+    add(g, N('box', hex('#1b2a6e'), { pos: [0, -2.3, 0], scl: [2.6, .3, 1.2] }));
+    portal.push({ g, r, d, col: pcol[i], label: E.label(g, String(i + 1), 'gate', 0) });
+  }
+  function portals(state) { portal.forEach((p, i) => { const open = state[i]; p.r.color = open ? p.col : [.35, .38, .5]; p.d.color = p.r.color; p.r.em = open ? 1 : .2; p.d.alpha = open ? .34 : .12; p.open = open; }); }
+
+  // ---------- الروبوت NET ROBOT ----------
+  const rb = add(root, N(null));
+  const rbBody = add(rb, N(null));
+  add(rbBody, N('cone', COL.cy, { pos: [0, -.98, 0], rot: [Math.PI, 0, 0], scl: [.62, .5, .62], em: .9 }));
+  add(rbBody, N('sphere', COL.white, { scl: [1.15, 1.2, 1.0] }));
+  add(rbBody, N('cyl', COL.router, { pos: [0, -.12, 0], scl: [1.17, .16, 1.02] }));
+  const chest = add(rbBody, N('box', COL.cy, { pos: [0, .16, .47], scl: [.3, .2, .08], em: 1 }));
+  const head = add(rbBody, N(null, null, { pos: [0, 1.0, 0] }));
+  add(head, N('box', COL.white, { scl: [1.25, .86, .95] }));
+  add(head, N('box', COL.navy, { pos: [0, 0, .46], scl: [1.02, .6, .08] }));
+  const eyes = [-1, 1].map(s => add(head, N('sphere', COL.cy, { pos: [s * .26, .05, .5], scl: [.22, .26, .1], em: 1 })));
+  const mouth = add(head, N('box', COL.sun, { pos: [0, -.17, .51], scl: [.28, .05, .05], em: 1 }));
+  for (const s of [-1, 1]) add(head, N('cyl', COL.router, { pos: [s * .68, 0, 0], rot: [0, 0, Math.PI / 2], scl: [.3, .14, .3] }));
+  add(head, N('cyl', hex('#c9d4f5'), { pos: [0, .58, 0], scl: [.06, .34, .06] }));
+  const tip = add(head, N('sphere', COL.orange, { pos: [0, .8, 0], scl: [.18, .18, .18], em: 1 }));
+  const arms = [-1, 1].map(s => {
+    const p = add(rbBody, N(null, null, { pos: [s * .64, .22, 0] }));
+    add(p, N('cyl', COL.router, { pos: [0, -.32, 0], scl: [.16, .6, .16] }));
+    add(p, N('sphere', COL.white, { pos: [0, -.68, 0], scl: [.26, .26, .26] }));
+    return p;
+  });
+  const robot = { px: 80, py: 120, size: 110, act: 'idle', t: 0, talk: 0, sx: 80, sy: 120, ss: 110 };
+  function robotAct(a, dur) { robot.act = a; robot.t = 0; robot.dur = dur || 1.6; }
+  function tickRobot(dt, t) {
+    robot.t += dt; if (robot.act !== 'idle' && robot.act !== 'dance' && robot.t > robot.dur) robot.act = 'idle';
+    const k = 1 - Math.exp(-dt * 5);
+    robot.sx += (robot.px - robot.sx) * k; robot.sy += (robot.py - robot.sy) * k; robot.ss += (robot.size - robot.ss) * k;
+    const d = 9, s = robot.ss / E.unitPx(d) / 2.9;
+    rb.pos = E.screenAnchor(robot.sx, robot.sy, d); rb.scl = [s, s, s]; rb.rot = [-E.cam.pitch, E.cam.yaw, 0];
+    let bob = Math.sin(t * 2.2) * .07, spin = 0, aL = .28 + Math.sin(t * 1.6) * .06, aR = -.28 - Math.sin(t * 1.6 + 1) * .06, tilt = 0, eyeY = .26, hy = 0;
+    const u = robot.t;
+    if (robot.act === 'happy') { bob += Math.abs(Math.sin(u * 7)) * .35; spin = Math.min(1, u / .8) * Math.PI * 2; aL = 2.7; aR = -2.7; eyeY = .14; }
+    else if (robot.act === 'sad') { tilt = Math.sin(u * 9) * .14 * Math.max(0, 1 - u); hy = -.18; aL = .1; aR = -.1; eyeY = .12; }
+    else if (robot.act === 'wave') { aR = -2.5 + Math.sin(u * 10) * .35; }
+    else if (robot.act === 'dance') { bob += Math.abs(Math.sin(u * 5)) * .3; spin = Math.sin(u * 2.5) * .6; aL = 2.2 + Math.sin(u * 10) * .5; aR = -2.2 + Math.sin(u * 10) * .5; tilt = Math.sin(u * 5) * .12; eyeY = .14; }
+    if (Math.sin(t * .9) > .985) eyeY = .04;
+    rbBody.pos = [0, bob, 0]; rbBody.rot = [0, spin, tilt]; head.rot = [hy, 0, tilt * .8];
+    arms[0].rot = [0, 0, -aL]; arms[1].rot = [0, 0, -aR];
+    eyes.forEach(e => e.scl[1] = eyeY);
+    const talking = robot.talk > 0; if (talking) robot.talk -= dt;
+    mouth.scl = [.28, talking ? .06 + Math.abs(Math.sin(t * 16)) * .16 : (robot.act === 'sad' ? .04 : .06), .05];
+    tip.em = .6 + .4 * Math.sin(t * (talking ? 14 : 3)); chest.em = .6 + .4 * Math.sin(t * 2);
+  }
+
+  // ---------- التحديث ----------
+  let glowGoal = .25;
+  function tick(dt, t) {
+    E.cityGlow += (glowGoal - E.cityGlow) * (1 - Math.exp(-dt * 1.5));
+    flows.forEach((f, i) => {
+      const ok = (i % 3) < Math.round(flowFrac * 3);
+      if (ok) { f.t = (f.t + dt * f.sp) % 1; f.node.color = COL.sun; const p = along(f.p, f.t); f.node.pos = [p[0], .75, p[1]]; }
+      else { const p = along(f.p, .12 + Math.abs(Math.sin(t * 2 + i)) * .1); f.node.color = COL.red; f.node.pos = [p[0] + Math.sin(t * 30 + i) * .04, .75, p[1]]; }
+      f.node.rot = [t * 2, t * 3 + i, 0];
+    });
+    cubes.forEach((c, i) => { c.c.rot = [Math.sin(t + i) * .15, t * .5 + i, 0]; c.g.pos[1] = 5 + Math.sin(t * 1.3 + i * 1.2) * .22; });
+    portal.forEach((p, i) => { p.r.rot[2] = t * (p.open ? .8 : .1) + i; p.d.em = .6 + .3 * Math.sin(t * 2 + i); });
+    for (const id in routers) routers[id].tips.forEach((tp, j) => tp.em = .55 + .45 * Math.sin(t * 4 + j * 2 + id.charCodeAt(1)));
+    for (const id in marks) if (marks[id].vis) { marks[id].rot[1] = t * 1.5; }
+    arrows.forEach((a, i) => { if (a.vis) a.pos[1] = 1.0 + Math.sin(t * 5 - i) * .12; });
+    if (flight) {
+      flight.t += dt / flight.dur;
+      const p = along(flight.pts, flight.t); hero.pos = [p[0], 1.2, p[1]]; hero.rot = [t * 3, t * 4, 0];
+      trail.forEach((tr, i) => { const q = along(flight.pts, flight.t - (i + 1) * .035); tr.pos = [q[0], 1.2, q[1]]; tr.rot = hero.rot; });
+      if (flight.t >= 1) { const cb = flight.cb; flight = null; trail.forEach(t2 => t2.vis = false); cb && cb(); }
+    }
+    tickRobot(dt, t);
+  }
+  function mark(id, col) { if (marks[id]) { marks[id].vis = !!col; if (col) marks[id].color = col === 'ok' ? hex('#4ade80') : col === 'bad' ? COL.red : COL.sun; } }
+  function clearMarks() { for (const id in marks) marks[id].vis = false; showArrows(null); hero.vis = false; }
+  function labels(o) { for (const l of E.labels) l.show = !!o[l.grp.split(' ')[0]]; }
+  function mode(m) { lab.vis = m === 'lab'; gates.vis = m === 'gates'; }
+  return { ok: true, tick, pcs, routers, pos, robot, robotAct, mark, clearMarks, labels, mode, fly, showArrows, setCubes, portals, setGlow: g => glowGoal = g, setFlow: f => flowFrac = f, RNAME, NET, hex };
+})();
+
+/* ===== مؤثرات صوتية مولّدة داخل اللعبة (Web Audio) — لا تحتاج ملفات خارجية ===== */
+const SFX = (() => {
+  let ctx = null, master = null, musicG = null, on = true, musicTimer = null, step = 0;
+  function init() {
+    if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext; ctx = new AC();
+      master = ctx.createGain(); master.gain.value = on ? .9 : 0; master.connect(ctx.destination);
+      musicG = ctx.createGain(); musicG.gain.value = .5; musicG.connect(master);
+      startMusic();
+    } catch (e) { ctx = null; }
+  }
+  function tone(f, dur, type, vol, when, dest, f2) {
+    if (!ctx) return; const t = ctx.currentTime + (when || 0), o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = type || 'sine'; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol || .2, t + .015); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(dest || master); o.start(t); o.stop(t + dur + .05);
+  }
+  function noise(dur, vol, when, freq, q, sweep) {
+    if (!ctx) return; const t = ctx.currentTime + (when || 0), n = Math.floor(ctx.sampleRate * dur), b = ctx.createBuffer(1, n, ctx.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+    const s = ctx.createBufferSource(); s.buffer = b; const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.setValueAtTime(freq || 1500, t); f.Q.value = q || 1;
+    if (sweep) f.frequency.exponentialRampToValueAtTime(sweep, t + dur);
+    const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + .01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    s.connect(f); f.connect(g); g.connect(master); s.start(t);
+  }
+  const S = {
+    click() { tone(660, .06, 'triangle', .12); },
+    start() { [392, 523, 659, 784, 1047].forEach((f, i) => tone(f, .28, 'triangle', .2, i * .11)); },
+    whoosh() { noise(.6, .25, 0, 300, 1.2, 3200); tone(220, .5, 'sine', .08, 0, null, 880); },
+    correct() { tone(784, .14, 'triangle', .25); tone(1175, .3, 'triangle', .25, .12); S.clap(.8, .25); },
+    wrong() { tone(260, .18, 'sine', .2, 0, null, 200); tone(196, .3, 'sine', .18, .16, null, 150); },
+    star() { [1568, 2093, 2637].forEach((f, i) => tone(f, .16, 'sine', .14, i * .07)); },
+    complete() { [523, 659, 784, 1047, 784, 1047, 1319].forEach((f, i) => tone(f, .32, 'triangle', .22, i * .14)); [262, 330, 392].forEach(f => tone(f, 1.2, 'sine', .1, .98)); },
+    clap(dur, vol) { const n = Math.floor((dur || 2.2) * 26); for (let i = 0; i < n; i++) noise(.05, (vol || .3) * (.5 + Math.random() * .5), Math.random() * (dur || 2.2), 1100 + Math.random() * 1600, 1.4); },
+    talk(n) { for (let i = 0; i < (n || 5); i++) tone(520 + Math.random() * 520, .06, 'square', .035, i * .075); },
+    packet() { tone(880, .5, 'sine', .1, 0, null, 1760); }
+  };
+  // موسيقى خلفية تقنية هادئة: تتابع نغمات بسيط متكرر
+  const prog = [[220, 277, 330], [196, 247, 294], [175, 220, 262], [196, 247, 330]];
+  function startMusic() {
+    if (musicTimer || !ctx) return;
+    musicTimer = setInterval(() => {
+      if (!on || !ctx || ctx.state !== 'running' || document.hidden) return;
+      const ch = prog[Math.floor(step / 8) % 4];
+      if (step % 8 === 0) ch.forEach(f => tone(f / 2, 2.6, 'sine', .05, 0, musicG));
+      tone(ch[[0, 1, 2, 1, 2, 1, 0, 2][step % 8]] * 2, .5, 'triangle', .03, 0, musicG);
+      step++;
+    }, 330);
+  }
+  return {
+    init, play(n, a, b) { if (on && ctx && S[n]) try { S[n](a, b); } catch (e) { } },
+    setOn(v) { on = v; if (master) master.gain.value = v ? .9 : 0; }, isOn: () => on
+  };
+})();
+
+/* ===== بنك الأسئلة — المحتوى من درس «الطبقة الثالثة: طبقة الشبكة» في الكتاب المدرسي ===== */
+/* الأنواع: mcq اختيار من متعدد | tf صح وخطأ | match توصيل | order ترتيب | build سحب وإفلات | finderr اكتشاف الخطأ | scene تحدٍّ داخل المدينة */
+const BANK = [
+  // ---------- المستوى الأول: مستكشفة الشبكة ----------
+  { id: 'a1', lv: 1, type: 'mcq', q: 'ما ترتيب طبقة الشبكة بين الطبقات؟', opts: ['الطبقة الثالثة', 'الطبقة الأولى', 'الطبقة الثانية', 'الطبقة الرابعة'], a: 0, hint: 'تأتي مباشرة بعد طبقة ربط البيانات (الثانية).', exp: 'طبقة الشبكة هي الطبقة الثالثة.' },
+  { id: 'a2', lv: 1, type: 'mcq', q: 'ماذا يسمى تنسيق الرسالة في طبقة الشبكة؟', opts: ['حزمة (Packet)', 'موجّه (Router)', 'خانة', 'عنوان'], a: 0, hint: 'كلمة إنجليزية تبدأ بحرف P.', exp: 'يسمى تنسيق الرسالة في هذه الطبقة بحزمة (Packet).' },
+  { id: 'a3', lv: 1, type: 'tf', q: 'العنونة الفيزيائية في الطبقة الثانية تساعد البيانات في التنقل داخل الشبكة المحلية.', a: true, hint: 'تذكري ما تعلمناه عن الطبقة الثانية.', exp: 'العنونة الفيزيائية (الطبقة الثانية) تساعد البيانات في التنقل داخل الشبكة المحلية.' },
+  { id: 'a4', lv: 1, type: 'tf', q: 'تعتمد طبقة الشبكة على العنونة الفيزيائية لنقل البيانات بين الشبكات.', a: false, hint: 'التنقل بين الشبكات يحتاج نظام عنونة آخر.', exp: 'طبقة الشبكة تقوم بهذا الدور عن طريق العنونة المنطقية، لا الفيزيائية.' },
+  { id: 'a5', lv: 1, type: 'mcq', q: 'ما نظام العنونة الذي يعمل على تنقل البيانات بين الشبكات؟', opts: ['العنونة المنطقية', 'العنونة الفيزيائية', 'عنونة صندوق البريد', 'لا تحتاج البيانات إلى عنونة'], a: 0, hint: 'هو النظام الذي تقوم به الطبقة الثالثة.', exp: 'التنقل بين الشبكات تقوم به الطبقة الثالثة عن طريق العنونة المنطقية.' },
+  { id: 'a6', lv: 1, type: 'mcq', q: 'ما الأجهزة التي توجّه الحزمة من المصدر إلى الهدف؟', opts: ['الموجّهات (Routers)', 'لوحات المفاتيح', 'الشاشات', 'الطابعات'], a: 0, hint: 'اسمها مشتق من كلمة «توجيه».', exp: 'توجَّه الحزمة من المصدر للهدف عبر الموجّهات Routers.' },
+  { id: 'a7', lv: 1, type: 'tf', q: 'يوجّه الموجّه الرسالة عبر أقصر الطرق اعتماداً على عنوان IP الهدف الموجود في رأس الحزمة.', a: true, hint: 'فكّري: كيف يعرف الموجّه إلى أين تذهب الحزمة؟', exp: 'يقوم الموجّه بتوجيه الرسالة عبر أقصر الطرق اعتماداً على عنوان IP الهدف الموجود في رأس الحزمة.' },
+  { id: 'a8', lv: 1, type: 'match', q: 'صِلي كل مفهوم بوظيفته:', pairs: [['العنونة الفيزيائية', 'التنقل داخل الشبكة المحلية'], ['العنونة المنطقية', 'التنقل بين الشبكات'], ['الموجّه Router', 'توجيه الحزمة عبر أقصر الطرق'], ['الحزمة Packet', 'تنسيق الرسالة في طبقة الشبكة']], hint: 'الفيزيائية للشبكة المحلية، والمنطقية بين الشبكات.', exp: 'الفيزيائية ← داخل الشبكة المحلية، المنطقية ← بين الشبكات، الموجّه ← توجيه الحزمة، الحزمة ← تنسيق الرسالة.' },
+  { id: 'a9', lv: 1, type: 'mcq', q: 'العنونة المنطقية المستخدمة في شبكة الحاسوب هي عنونة ما يسمى:', opts: ['IP', 'Byte', 'Packet', 'Router'], a: 0, hint: 'اختصار من حرفين لـ Internet Protocol.', exp: 'في شبكة الحاسوب، العنونة المنطقية المستخدمة هي عنونة ما يسمى IP.' },
+  { id: 'a10', lv: 1, type: 'tf', q: 'يمكن أن يشترك جهازان على شبكة الاتصال في العنوان نفسه دون مشكلة.', a: false, hint: 'هل يمكن أن يكون لشخصين رقم الهاتف نفسه؟', exp: 'في أي نظام اتصالات يجب وجود عنوان فريد لكل جهاز ليتمكن من التواصل مع أقرانه عبر الشبكات.' },
+  { id: 'a11', lv: 1, type: 'mcq', q: 'أيٌّ مما يأتي مثال على عنوان فريد في أنظمة الاتصال كما ورد في الدرس؟', opts: ['رقم الهاتف', 'لون الجهاز', 'حجم الشاشة', 'نوع لوحة المفاتيح'], a: 0, hint: 'شيء تستخدمينه للاتصال بصديقتك.', exp: 'من الأمثلة: عنوان صندوق البريد ورقم الهاتف.' },
+  { id: 'a12', lv: 1, type: 'mcq', q: 'أين يوجد عنوان IP الهدف الذي يعتمد عليه الموجّه؟', opts: ['في رأس الحزمة', 'على شاشة الحاسوب', 'في الطبقة الفيزيائية', 'في لوحة المفاتيح'], a: 0, hint: 'كل حزمة تحمله معها في مقدمتها.', exp: 'عنوان IP الهدف موجود في رأس الحزمة.' },
+  { id: 'a13', lv: 1, type: 'order', q: 'رتّبي هذه الطبقات من الأعلى إلى الأسفل كما في شكل الدرس:', items: ['طبقة النقل', 'طبقة الشبكة', 'طبقة ربط البيانات', 'الطبقة الفيزيائية'], hint: 'طبقة الشبكة تقع بين النقل وربط البيانات.', exp: 'الترتيب: النقل ثم الشبكة ثم ربط البيانات ثم الفيزيائية.' },
+  { id: 'a14', lv: 1, type: 'tf', q: 'يُستخدم عنوان IP من قبل أجهزة الشبكات الأخرى من أجل الوصول إلى الجهاز.', a: true, hint: 'لماذا نحتاج عنواناً لكل جهاز؟', exp: 'لكل جهاز عنوان IP يميزه عن غيره، ويستخدمه أجهزة الشبكات الأخرى من أجل الوصول إلى الجهاز.' },
+  { id: 'a15', lv: 1, type: 'mcq', q: 'من مهام طبقة الشبكة:', opts: ['توجيه الحزمة من المصدر للهدف عبر الموجّهات', 'عرض الصور على الشاشة', 'طباعة المستندات', 'تشغيل لوحة المفاتيح'], a: 0, hint: 'مهمة لها علاقة بالطريق الذي تسلكه الرسالة.', exp: 'من مهام هذه الطبقة توجيه الرسالة (الحزمة) من المصدر للهدف عبر الموجّهات Routers.' },
+  { id: 'a16', lv: 1, type: 'scene', q: 'حزمة خرجت من حاسوب في الشبكة (أ) وتريد مغادرة شبكتها. اضغطي في المدينة على الجهاز الذي يوجّهها خارج الشبكة.', targets: ['R1'], cam: 'left', fly: ['A2', 'R1', 'R2'], hint: 'ابحثي عن الجهاز البنفسجي ذي الهوائيين المتصل بالشبكة (أ).', exp: 'الموجّه (Router) هو الذي يوجّه الحزمة بين الشبكات.' },
+  { id: 'a17', lv: 1, type: 'scene', q: 'الحزمة متجهة إلى حاسوب في الشبكة (ج). اضغطي على الموجّه المتصل مباشرة بالشبكة (ج) ليوصلها.', targets: ['R3'], cam: 'right', fly: ['R2', 'R3', 'C2'], hint: 'الشبكة (ج) هي الوردية؛ ابحثي عن الموجّه الملاصق لها.', exp: 'الموجّه 3 متصل بالشبكة (ج) فيوصل الحزمة إلى أجهزتها.' },
+  { id: 'a18', lv: 1, type: 'scene', q: 'اضغطي على أي حاسوب ينتمي إلى الشبكة (ب).', targets: ['B1', 'B2', 'B3'], cam: 'top', hint: 'الشبكة (ب) هي الصفراء، وأجهزتها متصلة بالموجّه 2.', exp: 'أجهزة الشبكة (ب) متصلة بالموجّه 2، ولكل جهاز منها عنوان يميزه.' },
+
+  // ---------- المستوى الثاني: مهندسة عناوين IP ----------
+  { id: 'b1', lv: 2, type: 'mcq', q: 'كم بتاً يتكون منها عنوان IPv4؟', opts: ['32 بت', '8 بت', '16 بت', '64 بت'], a: 0, hint: '4 خانات × 8 بت.', exp: 'يتكون عنوان IPv4 من 32 بت.' },
+  { id: 'b2', lv: 2, type: 'mcq', q: 'إلى كم خانة يقسم عنوان IPv4؟', opts: ['4 خانات', '2', '8 خانات', '32 خانة'], a: 0, hint: 'عدّي أجزاء العنوان 192.168.15.60.', exp: 'يقسم عنوان IPv4 إلى 4 خانات.' },
+  { id: 'b3', lv: 2, type: 'mcq', q: 'كم بتاً في كل خانة من خانات عنوان IPv4؟', opts: ['8 بت', '4 بت', '16 بت', '32 بت'], a: 0, hint: '32 ÷ 4 = ؟', exp: 'في كل خانة 8 بت (1 byte).' },
+  { id: 'b4', lv: 2, type: 'tf', q: 'كل خانة في عنوان IPv4 تتكون من 8 بت، أي 1 byte.', a: true, hint: 'انظري إلى شكل الكتاب: 8 bits, 1 byte.', exp: 'كل خانة 8 bits وتساوي 1 byte.' },
+  { id: 'b5', lv: 2, type: 'mcq', q: 'ما أكبر قيمة عشرية يمكن أن تأخذها الخانة الواحدة؟', opts: ['255', '256', '192', '1000'], a: 0, hint: 'هي القيمة التي تمثل (1111 1111) ثنائي.', exp: 'تنحصر قيمة الخانة بين 0 و255؛ و255 تمثل (1111 1111) ثنائي.' },
+  { id: 'b6', lv: 2, type: 'mcq', q: 'ما أصغر قيمة عشرية يمكن أن تأخذها الخانة الواحدة؟', opts: ['0', '1', '8', '32'], a: 0, hint: 'هي القيمة التي تمثل (0000 0000) ثنائي.', exp: 'أصغر قيمة 0 وتمثل (0000 0000) ثنائي.' },
+  { id: 'b7', lv: 2, type: 'build', q: 'ركّبي عنوان IP الوارد في الكتاب بسحب الأجزاء إلى أماكنها بالترتيب الصحيح:', answer: ['192', '168', '15', '60'], extra: ['256', '300'], hint: 'العنوان يبدأ بـ 192 وينتهي بـ 60، ولا جزء فيه أكبر من 255.', exp: 'عنوان الكتاب هو 192.168.15.60.' },
+  { id: 'b8', lv: 2, type: 'build', q: 'حوّلي كل خانة ثنائية إلى قيمتها العشرية وركّبي العنوان:  11000000 . 10101000 . 00001111 . 00111100', answer: ['192', '168', '15', '60'], extra: ['255', '8'], hint: '11000000 = 128 + 64 = 192.', exp: '11000000=192، 10101000=168، 00001111=15، 00111100=60.' },
+  { id: 'b9', lv: 2, type: 'finderr', q: 'في هذا العنوان جزء غير صحيح. اضغطي عليه:', parts: ['192', '168', '256', '60'], bad: 2, hint: 'قيمة كل خانة تنحصر بين 0 و255.', exp: '256 أكبر من 255، وأقصى قيمة للخانة (8 بت) هي 255.' },
+  { id: 'b10', lv: 2, type: 'finderr', q: 'اكتشفي الجزء الخطأ في عنوان IPv4 الآتي:', parts: ['300', '168', '15', '60'], bad: 0, hint: 'ابحثي عن رقم أكبر من 255.', exp: '300 لا يمكن تمثيله في 8 بت؛ أقصى قيمة 255.' },
+  { id: 'b11', lv: 2, type: 'finderr', q: 'أحد أجزاء هذا العنوان لا يصلح. أيّها؟', parts: ['192', '168', '15', '999'], bad: 3, hint: 'كل خانة تتراوح من 0 إلى 255.', exp: '999 خارج المدى المسموح (0–255).' },
+  { id: 'b12', lv: 2, type: 'mcq', q: 'أيٌّ مما يأتي عنوان IPv4 صحيح؟', opts: ['192.168.15.60', '192.168.15', '192.300.15.60', '192.168.15.60.7'], a: 0, hint: 'أربع خانات، وكل خانة بين 0 و255.', exp: 'العنوان الصحيح 4 خانات عشرية كل منها بين 0 و255.' },
+  { id: 'b13', lv: 2, type: 'mcq', bits: '11000000', q: 'ما القيمة العشرية للخانة الثنائية 11000000؟', opts: ['192', '168', '60', '255'], a: 0, hint: 'اجمعي قيم المنازل التي فيها 1: 128 + 64.', exp: '11000000 = 128 + 64 = 192.' },
+  { id: 'b14', lv: 2, type: 'mcq', bits: '00001111', q: 'ما القيمة العشرية للخانة الثنائية 00001111؟', opts: ['15', '60', '8', '192'], a: 0, hint: 'اجمعي: 8 + 4 + 2 + 1.', exp: '00001111 = 8 + 4 + 2 + 1 = 15.' },
+  { id: 'b15', lv: 2, type: 'mcq', bits: '00111100', q: 'ما القيمة العشرية للخانة الثنائية 00111100؟', opts: ['60', '15', '168', '30'], a: 0, hint: 'اجمعي: 32 + 16 + 8 + 4.', exp: '00111100 = 32 + 16 + 8 + 4 = 60.' },
+  { id: 'b16', lv: 2, type: 'mcq', bits: '10101000', q: 'ما القيمة العشرية للخانة الثنائية 10101000؟', opts: ['168', '192', '160', '15'], a: 0, hint: 'اجمعي: 128 + 32 + 8.', exp: '10101000 = 128 + 32 + 8 = 168.' },
+  { id: 'b17', lv: 2, type: 'tf', q: 'عدد العناوين التي يدعمها IPv4 يقارب 4.3 مليار عنوان.', a: true, hint: 'العدد هو 2 مرفوعة للقوة 32.', exp: 'عدد العناوين = 2³² = 4,294,967,296 أي ما يقارب 4.3 مليار عنوان.' },
+  { id: 'b18', lv: 2, type: 'tf', q: 'يتكون عنوان IPv4 من 64 بت.', a: false, hint: '4 خانات في كل منها 8 بت.', exp: 'يتكون عنوان IPv4 من 32 بت وليس 64.' },
+  { id: 'b19', lv: 2, type: 'mcq', q: 'ينقسم عنوان IP إلى قسمين، هما:', opts: ['عنوان الشبكة الموجود فيها الجهاز وعنوان الجهاز داخل الشبكة', 'عنوان المرسل وعنوان الشاشة', 'اسم المستخدم وكلمة المرور', 'رقم الهاتف وصندوق البريد'], a: 0, hint: 'قسم يدل على الشبكة وقسم يدل على الجهاز.', exp: 'قسم يمثل عنوان الشبكة الموجود فيها الجهاز، والقسم الآخر يمثل عنوان الجهاز داخل الشبكة.' },
+  { id: 'b20', lv: 2, type: 'match', q: 'صِلي كل رقم بما يدل عليه في عنوان IPv4:', pairs: [['32', 'عدد بتات العنوان كاملاً'], ['8', 'عدد بتات الخانة الواحدة'], ['4', 'عدد خانات العنوان'], ['255', 'أكبر قيمة عشرية للخانة']], hint: '4 خانات × 8 بت = 32 بت.', exp: '32 بت للعنوان، 8 بت للخانة، 4 خانات، وأكبر قيمة 255.' },
+  { id: 'b21', lv: 2, type: 'tf', q: 'القيمة 255 عشري تمثل (1111 1111) ثنائي.', a: true, hint: 'كل البتات الثمانية تساوي 1.', exp: '255 عشري يمثل (1111 1111) ثنائي، و0 يمثل (0000 0000).' },
+  { id: 'b22', lv: 2, type: 'scene', q: 'اضغطي على المكعب الذي قيمته الثنائية 00001111.', targets: ['Q2'], cam: 'lab', hint: 'اجمعي 8 + 4 + 2 + 1 ثم ابحثي عن المكعب الذي يحمل الناتج.', exp: '00001111 = 15، وهي الخانة الثالثة في العنوان 192.168.15.60.' },
+  { id: 'b23', lv: 2, type: 'scene', q: 'اضغطي على المكعب الذي قيمته الثنائية 11000000.', targets: ['Q0'], cam: 'lab', hint: '128 + 64 = ؟', exp: '11000000 = 192، وهي الخانة الأولى في العنوان.' },
+  { id: 'b24', lv: 2, type: 'scene', q: 'اضغطي على المكعب الذي قيمته الثنائية 00111100.', targets: ['Q3'], cam: 'lab', hint: '32 + 16 + 8 + 4 = ؟', exp: '00111100 = 60، وهي الخانة الرابعة في العنوان.' },
+
+  // ---------- المستوى الثالث: قائدة توجيه البيانات ----------
+  { id: 'c1', lv: 3, type: 'mcq', q: 'أرسل الجهاز 192.168.5.10 حزمة إلى الجهاز 192.168.15.60. ما عنوان المصدر؟', opts: ['192.168.5.10', '192.168.15.60', '255.255.255.255', '0.0.0.0'], a: 0, hint: 'المصدر هو الجهاز الذي أرسل الحزمة.', exp: 'المصدر هو المرسِل: 192.168.5.10.' },
+  { id: 'c2', lv: 3, type: 'mcq', q: 'أرسل الجهاز 192.168.5.10 حزمة إلى الجهاز 192.168.15.60. ما عنوان الهدف؟', opts: ['192.168.15.60', '192.168.5.10', '192.168.5.60', '192.168.15.10'], a: 0, hint: 'الهدف هو الجهاز الذي ستصل إليه الحزمة.', exp: 'الهدف هو المستقبِل: 192.168.15.60.' },
+  { id: 'c3', lv: 3, type: 'mcq', q: 'على ماذا يعتمد الموجّه في توجيه الحزمة؟', opts: ['عنوان IP الهدف الموجود في رأس الحزمة', 'لون الحزمة', 'حجم شاشة الجهاز', 'اسم صاحبة الجهاز'], a: 0, hint: 'معلومة تحملها الحزمة في رأسها.', exp: 'يعتمد الموجّه على عنوان IP الهدف الموجود في رأس الحزمة.' },
+  { id: 'c4', lv: 3, type: 'tf', q: 'يختار الموجّه أطول الطرق لإيصال الحزمة إلى هدفها.', a: false, hint: 'الموجّه يريد إيصال الرسالة بأفضل طريق.', exp: 'يوجّه الموجّه الرسالة عبر أقصر الطرق.' },
+  { id: 'c5', lv: 3, type: 'order', q: 'رتّبي رحلة الحزمة من المصدر إلى الهدف:', items: ['الجهاز المصدر يرسل الحزمة', 'الموجّه يقرأ عنوان IP الهدف في رأس الحزمة', 'الموجّه يوجّه الحزمة عبر أقصر الطرق', 'تصل الحزمة إلى الجهاز الهدف'], hint: 'تبدأ الرحلة من المصدر وتنتهي عند الهدف.', exp: 'المصدر يرسل ← الموجّه يقرأ عنوان الهدف ← يوجّه عبر أقصر الطرق ← تصل للهدف.' },
+  { id: 'c6', lv: 3, type: 'mcq', q: 'جهازان في شبكتين مختلفتين. ما الذي يوجّه الحزمة بينهما؟', opts: ['الموجّهات Routers', 'العنونة الفيزيائية وحدها', 'لوحة المفاتيح', 'لا يمكن أن يتواصلا أبداً'], a: 0, hint: 'أجهزة تربط بين الشبكات.', exp: 'توجَّه الحزمة من المصدر للهدف عبر الموجّهات Routers.' },
+  { id: 'c7', lv: 3, type: 'tf', q: 'العنونة الفيزيائية وحدها تكفي لتنقل البيانات بين الشبكات المختلفة.', a: false, hint: 'الفيزيائية تساعد داخل الشبكة المحلية فقط.', exp: 'العنونة الفيزيائية للتنقل داخل الشبكة المحلية؛ أما بين الشبكات فنحتاج العنونة المنطقية (IP).' },
+  { id: 'c8', lv: 3, type: 'match', q: 'صِلي كل مصطلح بمعناه في رحلة الحزمة:', pairs: [['المصدر', 'الجهاز الذي أرسل الحزمة'], ['الهدف', 'الجهاز الذي ستصل إليه الحزمة'], ['الموجّه', 'يوجّه الحزمة بين الشبكات'], ['رأس الحزمة', 'يحتوي عنوان IP الهدف']], hint: 'المصدر يرسل والهدف يستقبل.', exp: 'المصدر ← المرسِل، الهدف ← المستقبِل، الموجّه ← التوجيه، رأس الحزمة ← عنوان IP الهدف.' },
+  { id: 'c9', lv: 3, type: 'mcq', q: 'أمام الموجّه طريقان إلى الهدف: الأول قصير والثاني طويل. أيهما يسلك؟', opts: ['الطريق الأقصر', 'الطريق الأطول', 'يتوقف ولا يرسل', 'يعيد الحزمة للمصدر'], a: 0, hint: 'تذكري عبارة الكتاب: «عبر أقصر الطرق».', exp: 'يقوم الموجّه بتوجيه الرسالة عبر أقصر الطرق.' },
+  { id: 'c10', lv: 3, type: 'tf', q: 'يجب أن يوجد لكل جهاز على شبكة الحاسوب عنوان IP يميزه عن غيره.', a: true, hint: 'كيف ستعرف الحزمة وجهتها دون عنوان مميز؟', exp: 'يجب أن يوجد لكل جهاز على شبكة الحاسوب عنوان IP يميزه عن غيره.' },
+  { id: 'c11', lv: 3, type: 'mcq', q: 'لماذا تستخدم أجهزة الشبكات الأخرى عنوان IP الخاص بجهاز ما؟', opts: ['من أجل الوصول إلى الجهاز', 'لتغيير لون شاشته', 'لإطفائه', 'لزيادة سرعته'], a: 0, hint: 'العنوان يدل على مكان الجهاز.', exp: 'يُستخدم عنوان IP من قبل أجهزة الشبكات الأخرى من أجل الوصول إلى الجهاز.' },
+  { id: 'c12', lv: 3, type: 'finderr', q: 'كُتب عنوان الهدف في رأس حزمة بشكل خطأ. اضغطي على الجزء الخطأ:', parts: ['192', '168', '15', '600'], bad: 3, hint: 'كل خانة بين 0 و255.', exp: '600 أكبر من 255 فلا يصلح خانةً في عنوان IPv4.' },
+  { id: 'c13', lv: 3, type: 'tf', q: 'الحزمة (Packet) هي اسم تنسيق الرسالة في طبقة الشبكة.', a: true, hint: 'راجعي ملاحظة الكتاب.', exp: 'يسمى تنسيق الرسالة في هذه الطبقة بحزمة (Packet).' },
+  { id: 'c14', lv: 3, type: 'order', q: 'رتّبي ما تفعله قائدة التوجيه لإيصال حزمة:', items: ['تحديد الجهاز المصدر', 'تحديد عنوان IP للهدف', 'اختيار الموجّه المناسب وأقصر مسار', 'وصول الحزمة إلى الجهاز الهدف'], hint: 'نبدأ بمعرفة من أرسل وإلى أين.', exp: 'نحدد المصدر ثم عنوان الهدف ثم الموجّه والمسار الأقصر، فتصل الحزمة.' },
+  { id: 'c15', lv: 3, type: 'mcq', q: 'عنوان الهدف في رأس الحزمة هو 192.168.15.60. ماذا يمثل قسما هذا العنوان؟', opts: ['عنوان الشبكة وعنوان الجهاز داخلها', 'اسم الجهاز ولونه', 'سرعة الشبكة وحجمها', 'تاريخ الإرسال ووقته'], a: 0, hint: 'عنوان IP ينقسم إلى قسمين.', exp: 'قسم يمثل عنوان الشبكة الموجود فيها الجهاز، والآخر عنوان الجهاز داخل الشبكة.' }
+];
+const LEVELS = {
+  1: { name: 'مستكشفة الشبكة', en: 'NETWORK EXPLORER', diff: 'سهل', recipe: { scene: 2, match: 1, order: 1, tf: 2, mcq: 3 }, medal: '🥉', intro: 'في هذا المستوى ستتعرفين إلى طبقة الشبكة ووظيفتها ودور الموجّهات. اسحبي المدينة بإصبعك لتدويرها!', done: 'رائعة! لقد أصبحتِ مستكشفة محترفة للشبكة. أصبحتِ تعرفين وظيفة طبقة الشبكة ودور الموجهات. استعدي لاكتشاف عالم عناوين IP!' },
+  2: { name: 'مهندسة عناوين IP', en: 'IP ADDRESS CHALLENGE', diff: 'متوسط', recipe: { build: 1, finderr: 1, scene: 1, match: 1, tf: 2, mcq: 3 }, medal: '🥈', intro: 'هذه المكعبات الأربعة هي خانات العنوان 192.168.15.60. اضغطي على كل مكعب لتري قيمته العشرية والثنائية.', done: 'ممتازة! لقد أتقنتِ تركيب عنوان IPv4 وفهمتِ أجزائه. بقي أمامكِ التحدي الأكبر: توجيه البيانات وإنقاذ الشبكة!' },
+  3: { name: 'قائدة توجيه البيانات', en: 'ROUTING MASTER', diff: 'متقدم', recipe: { order: 1, match: 1, tf: 1, mcq: 2 }, medal: '🥇', intro: 'التحدي الأكبر! أجيبي عن الأسئلة ثم وجّهي حزمة حقيقية من الشبكة (أ) إلى الشبكة (ج) عبر الموجّهات.', done: 'أنتِ بطلة الشبكات! لقد نجحتِ في توجيه حزم البيانات وإنقاذ المدينة الرقمية. تستحقين شهادة الإنجاز!' }
+};
+const OCT = [['192', '11000000'], ['168', '10101000'], ['15', '00001111'], ['60', '00111100']];
+const REVIEW = {
+  1: ['طبقة الشبكة هي الطبقة الثالثة، وتقع بين طبقة النقل وطبقة ربط البيانات.', 'العنونة الفيزيائية (الطبقة الثانية) تساعد البيانات في التنقل داخل الشبكة المحلية.', 'التنقل بين الشبكات تقوم به الطبقة الثالثة عن طريق العنونة المنطقية.', 'يسمى تنسيق الرسالة في هذه الطبقة حزمة (Packet).', 'يجب وجود عنوان فريد لكل جهاز، مثل عنوان صندوق البريد ورقم الهاتف. في شبكة الحاسوب العنونة المنطقية هي IP.', 'توجَّه الحزمة من المصدر للهدف عبر الموجّهات Routers، عبر أقصر الطرق اعتماداً على عنوان IP الهدف الموجود في رأس الحزمة.'],
+  2: ['يتكون عنوان IPv4 من 32 بت، يقسم إلى 4 خانات، في كل خانة 8 بت (1 byte).', 'مثال الكتاب: 192.168.15.60 = 11000000 . 10101000 . 00001111 . 00111100', 'عدد العناوين التي يدعمها IPv4 هو 2³² = 4,294,967,296 أي ما يقارب 4.3 مليار عنوان.', 'يُمثَّل بالنظام العشري في 4 خانات، وقيمة كل خانة تنحصر بين 0 (0000 0000) و255 (1111 1111).', 'ينقسم عنوان IP إلى قسمين: قسم يمثل عنوان الشبكة الموجود فيها الجهاز، والقسم الآخر يمثل عنوان الجهاز داخل الشبكة.'],
+  3: ['المصدر هو الجهاز الذي يرسل الحزمة، والهدف هو الجهاز الذي ستصل إليه.', 'لكل جهاز على شبكة الحاسوب عنوان IP يميزه عن غيره، وتستخدمه أجهزة الشبكات الأخرى للوصول إليه.', 'الموجّه يقرأ عنوان IP الهدف الموجود في رأس الحزمة.', 'يوجّه الموجّه الرسالة عبر أقصر الطرق حتى تصل إلى هدفها.']
+};
+
+/* ===== الإعدادات العامة — تعدّلها المعلمة قبل نشر النسخة المتصلة بالإنترنت ===== */
+const CONFIG = {
+  // رابط قاعدة Firebase Realtime Database (مثال: https://my-project-default-rtdb.firebaseio.com). هذا الرابط ليس مفتاحاً سرياً.
+  CLOUD_URL: '',
+  // بصمة (SHA-256) رمز المعلمة لتثبيته على كل الأجهزة. اتركيه فارغاً لتنشئ المعلمة رمزها عند أول دخول على الجهاز.
+  TEACHER_HASH: ''
+};
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[a[i], a[j]] = [a[j], a[i]]; } return a; };
+const EMBED = (() => { try { return window.self !== window.top; } catch (e) { return true; } })();
+
+// ---------- التخزين المحلي ----------
+const LS = 'netrescue.v1';
+const DEF = () => ({ players: {}, current: null, imported: {}, teacherHash: '', sound: true, settings: { pass: 70, unlock: 'seq', enabled: { 1: true, 2: true, 3: true }, disabledQ: [], customQ: [], cloud: '' } });
+let S = DEF(), storageOK = true;
+try { const r = localStorage.getItem(LS); if (r) { const o = JSON.parse(r); S = Object.assign(DEF(), o); S.settings = Object.assign(DEF().settings, o.settings || {}); } } catch (e) { storageOK = false; }
+function save() { try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) { storageOK = false; } }
+const newLv = () => ({ best: 0, pct: 0, stars: 0, passed: false, tries: 0, ok: 0, bad: 0, lastSet: [] });
+function newPlayer(name, section) {
+  const id = 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  S.players[id] = { id, name, section, lv: { 1: newLv(), 2: newLv(), 3: newLv() }, wrongQ: {}, log: [], placement: null, certDate: null, updated: Date.now() };
+  S.current = id; save(); return S.players[id];
+}
+const me = () => S.players[S.current] || null;
+const PER_Q = 15, BONUS_DONE = 10, BONUS_PASS = 20;
+function totals(p) {
+  let points = 0, pct = 0, stars = 0, level = 0, tries = 0;
+  for (const k of [1, 2, 3]) { const l = p.lv[k]; points += l.best; pct += l.pct; stars += l.stars; tries += l.tries; if (l.passed) level = k; }
+  return { points, pct: Math.round(pct / 3), stars, level, tries };
+}
+const rec = p => Object.assign({ id: p.id, name: p.name, section: p.section || '', wrongQ: p.wrongQ, updated: p.updated }, totals(p));
+const passedCount = p => p ? [1, 2, 3].filter(k => p.lv[k].passed).length : 0;
+const unlocked = (p, lv) => S.settings.enabled[lv] !== false && (S.settings.unlock === 'open' || lv === 1 || (p && p.lv[lv - 1].passed));
+function logP(p, msg) { p.log.unshift({ t: Date.now(), msg }); p.log = p.log.slice(0, 40); p.updated = Date.now(); }
+const fmtDate = t => { try { return new Date(t).toLocaleDateString('ar-EG-u-nu-latn', { year: 'numeric', month: 'long', day: 'numeric' }); } catch (e) { return new Date(t).toISOString().slice(0, 10); } };
+
+// ---------- قاعدة البيانات المشتركة (اختيارية) عبر Firebase REST ----------
+const Cloud = {
+  cache: null, state: 'off', err: '',
+  url() { return (S.settings.cloud || CONFIG.CLOUD_URL || '').trim().replace(/\/+$/, ''); },
+  async push(p) {
+    const u = this.url(); if (!u) return false;
+    try { const r = await fetch(u + '/scores/' + p.id + '.json', { method: 'PUT', body: JSON.stringify(rec(p)) }); if (!r.ok) throw new Error('HTTP ' + r.status); this.state = 'on'; return true; }
+    catch (e) { this.state = 'err'; this.err = String(e.message || e); return false; }
+  },
+  async pull() {
+    const u = this.url(); if (!u) { this.state = 'off'; this.cache = null; return null; }
+    try { const r = await fetch(u + '/scores.json'); if (!r.ok) throw new Error('HTTP ' + r.status); this.cache = (await r.json()) || {}; this.state = 'on'; return this.cache; }
+    catch (e) { this.state = 'err'; this.err = String(e.message || e); return null; }
+  },
+  async settings() {
+    const u = this.url(); if (!u) return;
+    try { const r = await fetch(u + '/settings.json'); if (!r.ok) return; const s = await r.json(); if (s && typeof s === 'object') { for (const k of ['pass', 'unlock', 'enabled', 'disabledQ', 'customQ']) if (s[k] != null) S.settings[k] = s[k]; save(); } } catch (e) { }
+  }
+};
+function allRecords() {
+  const m = {};
+  const put = r => { if (r && r.id && r.name && (!m[r.id] || (r.updated || 0) >= (m[r.id].updated || 0))) m[r.id] = r; };
+  if (Cloud.cache) Object.values(Cloud.cache).forEach(put);
+  Object.values(S.imported).forEach(put);
+  Object.values(S.players).forEach(p => put(rec(p)));
+  return Object.values(m).sort((a, b) => (b.points - a.points) || (b.pct - a.pct) || ((a.updated || 0) - (b.updated || 0)));
+}
+const rankOf = id => allRecords().findIndex(r => r.id === id) + 1;
+
+// ---------- أدوات الواجهة ----------
+let toastT = null;
+function toast(msg, ms) { const t = $('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), ms || 2600); }
+function modal(html, onOpen) { const m = $('modal'); m.innerHTML = '<div class="mbox">' + html + '</div>'; m.hidden = false; if (onOpen) onOpen(m); m.querySelectorAll('[data-close]').forEach(b => b.onclick = closeModal); }
+function closeModal() { $('modal').hidden = true; $('modal').innerHTML = ''; }
+function textModal(title, text, note) {
+  modal(`<h3>${esc(title)}</h3>${note ? `<p class="mute">${esc(note)}</p>` : ''}<textarea id="tm-text" readonly rows="6">${esc(text)}</textarea><div class="row"><button class="btn pri" id="tm-copy">نسخ</button><button class="btn ghost" data-close>إغلاق</button></div>`, () => {
+    $('tm-copy').onclick = async () => { try { await navigator.clipboard.writeText(text); toast('تم النسخ'); } catch (e) { $('tm-text').select(); toast('حدّدي النص وانسخيه يدوياً'); } };
+  });
+}
+async function saveFile(name, data) {
+  let d = null;
+  try { d = window.claude && window.claude.use ? await window.claude.use('downloads') : null; } catch (e) { d = null; }
+  if (d) { try { await d.save({ filename: name, data }); toast('تم حفظ الملف'); return true; } catch (e) { toast(e && e.code === 'declined' ? 'أُلغي الحفظ' : 'تعذّر حفظ الملف في هذه النافذة'); return false; } }
+  if (EMBED) { toast('تنزيل الملفات غير متاح في هذه النافذة. استخدمي النسخ أو افتحي اللعبة من ملفها المستقل.', 4500); return false; }
+  const blob = data instanceof Blob ? data : new Blob([data]); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); return true;
+}
+async function sha(s) {
+  try { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('netrescue:' + s)); return Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2, '0')).join(''); }
+  catch (e) { let h = 5381; for (const c of 'netrescue:' + s) h = ((h << 5) + h + c.charCodeAt(0)) >>> 0; return 'x' + h.toString(16); }
+}
+const b64e = s => btoa(unescape(encodeURIComponent(s))), b64d = s => decodeURIComponent(escape(atob(s)));
+function burst(n, ch) {
+  const fx = $('fx');
+  for (let i = 0; i < (n || 12); i++) { const s = document.createElement('span'); s.textContent = ch || '⭐'; s.style.left = (20 + Math.random() * 60) + '%'; s.style.top = (18 + Math.random() * 20) + '%'; s.style.setProperty('--dx', (Math.random() * 160 - 80) + 'px'); s.style.animationDelay = (Math.random() * .25) + 's'; fx.appendChild(s); setTimeout(() => s.remove(), 1700); }
+}
+function confetti() {
+  const fx = $('fx'), cols = ['#38e1ff', '#ffd166', '#ff7ac3', '#2dd4bf', '#8b7bff'];
+  for (let i = 0; i < 46; i++) { const s = document.createElement('i'); s.className = 'cf'; s.style.left = Math.random() * 100 + '%'; s.style.background = cols[i % 5]; s.style.animationDelay = Math.random() * 1.2 + 's'; s.style.setProperty('--r', (Math.random() * 720 - 360) + 'deg'); fx.appendChild(s); setTimeout(() => s.remove(), 4200); }
+}
+
+/* ===== منطق اللعبة: الشاشات، الأسئلة، المستويات ===== */
+const ui = $('ui');
+let screen = 'home', run = null, Q = null, pickFn = null;
+E.onPick = id => { if (pickFn) pickFn(id); };
+
+// ---------- تخطيط الشاشة والكاميرا ----------
+const CAMS = {
+  home: { target: [0, 1.5, -3], pitch: .42, width: 25, depth: 13 },
+  all: { target: [0, 0, -2.6], pitch: .95, width: 24, depth: 19 },
+  right: { target: [5.3, 0, -.9], pitch: .85, width: 12.5, depth: 11 },
+  top: { target: [0, 0, -7.6], pitch: .85, width: 11.5, depth: 11 },
+  mid: { target: [0, 0, -1.3], pitch: 1.0, width: 13, depth: 13 },
+  left: { target: [-5.6, 0, -.6], pitch: .85, width: 12.5, depth: 11 },
+  lab: { target: [2.3, 4.7, 1], pitch: .1, width: 16.5, depth: 6.5 },
+  gates: { target: [0, 2.3, 8], pitch: .08, width: 15.5, depth: 7.5 },
+  party: { target: [0, 3, -6], pitch: .3, width: 30, depth: 16 }
+};
+let curCam = 'home', curLay = 'home', curF = 0;
+function layout(lay, camName, snap, fOv) {
+  if (lay) curF = fOv || 0;
+  curLay = lay || curLay; curCam = camName || curCam; document.body.dataset.lay = curLay;
+  if (!E.ok) return;
+  const [Wd, Hd] = E.size(), wide = Wd >= 900 && Wd > Hd, c = Object.assign({}, CAMS[curCam]);
+  document.body.dataset.lay = curLay; document.body.classList.toggle('wide', wide);
+  let f = curF || { home: .46, play: .56, gates: .52, party: .5, full: 0 }[curLay];
+  const R = W.robot;
+  if (wide && curLay !== 'full') { const pw = Math.min(460, Wd * .42); c.kx = pw / Wd; c.visW = Wd - pw; c.visH = Hd; R.px = pw + (Wd - pw) * (curLay === 'party' ? .5 : .88); R.py = curLay === 'party' ? Hd * .45 : 150; R.size = curLay === 'party' ? Math.min(300, Hd * .4) : 130; }
+  else {
+    c.ky = f; c.visW = Wd; c.visH = Hd * (1 - f); R.px = Wd - 56; R.py = 118; R.size = 92;
+    if (curLay === 'party') { R.px = Wd / 2; R.py = Hd * .27; R.size = Math.min(210, Hd * .26); }
+    if (curLay === 'home') { c.ky = .1; c.visH = Hd * .3; R.px = Wd - 60; R.py = Hd * .53; R.size = 96; }
+    if (curLay === 'gates') { R.px = Wd - 40; R.py = 92; R.size = 66; }
+  }
+  if (curLay === 'full') { R.py = -300; }
+  E.setCam(c, snap);
+}
+window.addEventListener('resize', () => setTimeout(() => layout(), 60));
+let tOrbit = 0;
+E.onFrame = (dt, t) => {
+  tOrbit += dt;
+  if (curLay === 'home' || curLay === 'full') E.goal.yaw = Math.sin(tOrbit * .12) * .35;
+  else if (curLay === 'party') E.goal.yaw = Math.sin(tOrbit * .3) * .5;
+  W.tick(dt, t);
+};
+E.orbit = true;
+function syncCity() { const n = passedCount(me()); W.setGlow(.22 + .26 * n); W.setFlow(n / 3); }
+
+// ---------- الروبوت يتكلم ----------
+let sayT = null;
+function say(text, ms) {
+  const b = $('bubble'); if (!text) { b.hidden = true; return; }
+  b.innerHTML = '<b>NET ROBOT</b>' + esc(text); b.hidden = false; b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop');
+  W.robot.talk = Math.min(2.5, .4 + text.length * .04); SFX.play('talk', Math.min(8, 3 + text.length / 12));
+  clearTimeout(sayT); if (ms !== 0) sayT = setTimeout(() => { b.hidden = true; }, ms || 4200);
+}
+const pick1 = a => a[Math.floor(Math.random() * a.length)];
+const CHEER = ['مهندسة مبدعة! 🌟', 'ممتاز، واصلي التقدم!', 'إجابة رائعة! الشبكة تتعافى.', 'أحسنتِ! أنتِ على الطريق الصحيح.'];
+const RETRY = ['لا بأس، جرّبي مرة ثانية!', 'اقتربتِ! اقرئي التلميح بهدوء.', 'أنا واثق أنكِ ستعرفينها!'];
+const SOFT = ['لا تقلقي، هكذا نتعلم. تابعي!', 'كل مهندسة تخطئ ثم تتقن. إلى السؤال التالي!'];
+
+// ---------- التنقل بين الشاشات ----------
+function hud(on) { $('hud').hidden = !on; }
+function go(name, arg) {
+  screen = name; pickFn = null; say(''); closeModal(); W.clearMarks && W.clearMarks();
+  ({ home: scrHome, levels: scrLevels, howto: scrHowto, board: scrBoard, mine: scrMine, teacher: scrTeacher, cert: scrCert, story: scrStory })[name](arg);
+}
+function needPlayer(then) {
+  if (me()) return then();
+  const others = Object.values(S.players);
+  modal(`<h3>سجّلي اسمكِ أيتها المهندسة</h3>
+    <label for="pn-name">الاسم الكامل</label><input id="pn-name" type="text" maxlength="50" autocomplete="name" placeholder="مثال: سارة أحمد محمد">
+    <label for="pn-sec">الصف / الشعبة (اختياري)</label><input id="pn-sec" type="text" maxlength="30" placeholder="مثال: الثاني عشر الأدبي (أ)">
+    <div class="row"><button class="btn pri" id="pn-ok">حفظ ومتابعة</button><button class="btn ghost" data-close>إلغاء</button></div>
+    ${others.length ? `<p class="mute">أو تابعي باسم محفوظ على هذا الجهاز:</p><div class="row wrap">${others.map(p => `<button class="btn ghost sm" data-pl="${p.id}">${esc(p.name)}</button>`).join('')}</div>` : ''}`, m => {
+    $('pn-ok').onclick = () => { const n = $('pn-name').value.trim().replace(/\s+/g, ' '); if (n.length < 3) { toast('اكتبي اسمكِ الكامل من فضلك'); return; } newPlayer(n, $('pn-sec').value.trim()); closeModal(); syncCity(); then(); };
+    m.querySelectorAll('[data-pl]').forEach(b => b.onclick = () => { S.current = b.dataset.pl; save(); closeModal(); syncCity(); then(); });
+  });
+}
+function scrHome() {
+  hud(false); W.mode('nets'); W.labels({}); layout('home', 'home'); syncCity();
+  const p = me();
+  ui.innerHTML = `<section class="scr home">
+    <div class="hero"><p class="kick">NETWORK RESCUE 3D</p><h1>مغامرة إنقاذ الشبكة</h1>
+      <p class="lead"><b>مرحباً بكِ أيتها المهندسة الصغيرة!</b> الشبكة في خطر، وحزم البيانات لا تستطيع الوصول إلى وجهتها. هل أنتِ مستعدة لخوض التحدي وإعادة الاتصال بين الشبكات؟</p></div>
+    <div class="menu">
+      ${p ? `<p class="who">المهندسة: <b>${esc(p.name)}</b></p>` : ''}
+      <button class="btn pri big" id="m-start">🚀 ابدئي المغامرة</button>
+      <div class="grid2">
+        <button class="btn" id="m-levels">🗺️ اختاري المستوى</button>
+        <button class="btn" id="m-place">🧭 اختبار تحديد المستوى</button>
+        <button class="btn" id="m-howto">📘 تعليمات اللعبة</button>
+        <button class="btn" id="m-board">🏆 جدول الصدارة</button>
+        <button class="btn" id="m-mine">🎖️ إنجازاتي</button>
+        <button class="btn ghost" id="m-teacher">🔐 لوحة المعلمة</button>
+      </div>
+      <p class="credit">إعداد أ. فداء الهليس<br>مدرسة فلسطين الحبيبة 2</p>
+    </div></section>`;
+  $('m-start').onclick = () => { SFX.play('start'); needPlayer(() => go('story')); };
+  $('m-levels').onclick = () => needPlayer(() => go('levels'));
+  $('m-place').onclick = () => needPlayer(startPlacement);
+  $('m-howto').onclick = () => go('howto');
+  $('m-board').onclick = () => go('board');
+  $('m-mine').onclick = () => needPlayer(() => go('mine'));
+  $('m-teacher').onclick = () => go('teacher');
+}
+function nextLevelFor(p) { for (const k of [1, 2, 3]) if (!p.lv[k].passed && unlocked(p, k)) return k; return 0; }
+function scrStory() {
+  hud(false); layout('play', 'all'); W.labels({ net: 1 }); W.robotAct('wave', 2.5);
+  const p = me(), nx = nextLevelFor(p);
+  ui.innerHTML = `<section class="sheet"><p class="tag">القصة</p><h2>مرحباً بكِ أيتها المهندسة الصغيرة!</h2>
+    <p>لقد تعطلت شبكة المدينة، وأصبحت الأجهزة غير قادرة على التواصل بين الشبكات المختلفة.</p>
+    <p>مهمتكِ هي اكتشاف أسرار طبقة الشبكة، وفهم عناوين IP، وتوجيه حزم البيانات لإنقاذ المدينة وإعادة الاتصال.</p>
+    <p class="mute">الحزم الحمراء في المدينة عالقة. كلما اجتزتِ مستوى عادت الحياة إلى جزء من الشبكة.</p>
+    <div class="qact"><button class="btn ghost" id="st-back">رجوع</button><button class="btn pri" id="st-go">${nx ? 'هيا بنا إلى المستوى ' + nx + ' ←' : 'اختاري المستوى ←'}</button></div></section>`;
+  say('أنا NET ROBOT، مرشدكِ في هذه المغامرة!', 5000);
+  $('st-back').onclick = () => go('home'); $('st-go').onclick = () => nx ? startLevel(nx) : go('levels');
+}
+function scrLevels() {
+  hud(false); W.mode('gates'); W.labels({ gate: 1 }); layout('gates', 'gates');
+  const p = me();
+  W.portals([1, 2, 3].map(k => unlocked(p, k)));
+  ui.innerHTML = `<section class="sheet"><div class="shead"><h2>اختاري المستوى</h2><button class="btn ghost sm" id="lv-back">الرئيسية</button></div>
+    <div class="cards">${[1, 2, 3].map(k => { const L = LEVELS[k], l = p.lv[k], open = unlocked(p, k), off = S.settings.enabled[k] === false; return `<button class="card lv${k} ${open ? '' : 'locked'}" data-lv="${k}" ${open ? '' : 'aria-disabled="true"'}>
+      <span class="num">${k}</span><span class="cbody"><b>${L.name}</b><small class="en">${L.en}</small><small>الصعوبة: ${L.diff} · ${off ? 'أوقفته المعلمة' : open ? (l.passed ? 'تم الاجتياز ' + l.pct + '%' : l.tries ? 'أفضل نتيجة ' + l.pct + '%' : 'مفتوح') : 'يُفتح بعد اجتياز المستوى ' + (k - 1)}</small></span>
+      <span class="st">${open ? '★'.repeat(l.stars) + '☆'.repeat(3 - l.stars) : '🔒'}</span></button>`; }).join('')}</div>
+    <p class="mute">شرط الاجتياز: ${S.settings.pass}% على الأقل من درجة المستوى.${S.settings.unlock === 'open' ? ' (وضع تشخيصي: كل المستويات مفتوحة)' : ''}</p></section>`;
+  const pick = k => { if (!unlocked(p, k)) { SFX.play('wrong'); toast(S.settings.enabled[k] === false ? 'هذا المستوى أوقفته المعلمة حالياً' : 'اجتازي المستوى ' + (k - 1) + ' أولاً لفتح هذه البوابة'); return; } startLevel(k); };
+  ui.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => pick(+b.dataset.lv));
+  pickFn = id => { if (id[0] === 'P') pick(+id[1]); };
+  $('lv-back').onclick = () => go('home');
+}
+function scrHowto() {
+  hud(false); layout('full', 'home');
+  ui.innerHTML = `<section class="page"><div class="shead"><h2>تعليمات اللعبة</h2><button class="btn ghost sm" id="hb">رجوع</button></div>
+    <ol class="how"><li>اكتبي اسمكِ الكامل ثم ابدئي من المستوى الأول. كل مستوى يُفتح بعد اجتياز الذي قبله بنسبة ${S.settings.pass}% على الأقل.</li>
+    <li>لكل سؤال محاولتان: الإجابة الصحيحة 10 نقاط، ومن المحاولة الأولى دون تلميح 5 نقاط إضافية.</li>
+    <li>في تحديات المدينة: اضغطي على الجهاز أو الموجّه المطلوب داخل المشهد ثلاثي الأبعاد، واسحبي بإصبعك لتدوير المدينة.</li>
+    <li>في أسئلة التوصيل: اضغطي على المفهوم ثم على وظيفته. في الترتيب: اضغطي على العناصر بالتسلسل الصحيح. في التركيب: اسحبي الأجزاء أو اضغطي عليها.</li>
+    <li>إكمال المستوى يمنحكِ ${BONUS_DONE} نقاط، واجتيازه ${BONUS_PASS} نقطة. تُحتسب لكِ أفضل نتيجة في كل مستوى فقط، فإعادة المحاولة لا تضخّم النقاط.</li>
+    <li>بعد اجتياز المستويات الثلاثة تحصلين على شهادة إنجاز باسمكِ.</li>
+    <li>زر 🔊 أعلى الشاشة يشغّل الصوت أو يوقفه.</li></ol>
+    <p class="mute">الدرس الثاني: الطبقة الثالثة – طبقة الشبكة · التكنولوجيا للصف الثاني عشر (المنهاج الفلسطيني)</p></section>`;
+  $('hb').onclick = () => go('home');
+}
+
+// ---------- اختيار أسئلة المحاولة ----------
+function pool(lv) { return BANK.concat(S.settings.customQ || []).filter(q => q.lv === lv && !(S.settings.disabledQ || []).includes(q.id) && (E.ok || q.type !== 'scene')); }
+function pickSet(lv, p) {
+  const all = pool(lv), rc = LEVELS[lv].recipe, last = new Set(p.lv[lv].lastSet || []), out = [];
+  let need = 0;
+  for (const t in rc) { need += rc[t]; const c = shuffle(all.filter(q => q.type === t)).sort((a, b) => last.has(a.id) - last.has(b.id)); out.push(...c.slice(0, rc[t])); }
+  if (out.length < need) { const rest = shuffle(all.filter(q => !out.includes(q))).sort((a, b) => last.has(a.id) - last.has(b.id)); out.push(...rest.slice(0, need - out.length)); }
+  const left = shuffle(out), res = [];
+  while (left.length) { let i = left.findIndex(q => !res.length || q.type !== res[res.length - 1].type); if (i < 0) i = 0; res.push(left.splice(i, 1)[0]); }
+  return res;
+}
+
+// ---------- بدء مستوى ----------
+function startLevel(lv) {
+  const p = me(); if (!unlocked(p, lv)) return go('levels');
+  SFX.play('whoosh'); W.clearMarks();
+  const items = pickSet(lv, p);
+  run = { lv, items, i: 0, pts: 0, ok: 0, bad: 0, total: items.length + (lv === 3 && E.ok ? 4 : 0), res: [], n: 0 };
+  W.mode(lv === 2 ? 'lab' : 'nets'); W.setCubes(OCT.map(o => o[0]));
+  hud(true); updHud(); screen = 'play';
+  const L = LEVELS[lv];
+  layout('play', lv === 2 ? 'lab' : 'all'); W.labels(lv === 2 ? { cube: 1 } : lv === 3 ? { net: 1, rt: 1, ip: 1 } : { net: 1, rt: 1 });
+  ui.innerHTML = `<section class="sheet"><p class="tag">المستوى ${lv} · ${L.diff}</p><h2>${L.name} <small class="en">${L.en}</small></h2><p>${L.intro}</p><div id="xinfo"></div>
+    <p class="mute">${run.total} تحديات · الاجتياز من ${S.settings.pass}%</p><div class="qact"><button class="btn ghost" id="in-back">رجوع</button><button class="btn pri" id="in-go">ابدئي التحدي ←</button></div></section>`;
+  say(lv === 2 ? 'اضغطي على المكعبات المضيئة!' : 'هيا نبدأ! أنا معكِ.', 4500); W.robotAct('wave', 2);
+  if (lv === 2) pickFn = id => { if (id[0] !== 'Q') return; const o = OCT[+id[1]]; for (let i = 0; i < 4; i++) W.mark('Q' + i, i === +id[1] ? 'sel' : null); SFX.play('click'); $('xinfo').innerHTML = `<div class="info">الخانة ${+id[1] + 1}: القيمة العشرية <b>${o[0]}</b> = القيمة الثنائية <b dir="ltr">${o[1]}</b> (8 بت = 1 byte)${bitTable(o[1])}</div>`; };
+  $('in-back').onclick = () => go('levels'); $('in-go').onclick = () => { W.clearMarks(); nextQ(); };
+}
+function bitTable(bits) { const pv = [128, 64, 32, 16, 8, 4, 2, 1]; return `<table class="bits" dir="ltr"><tr>${pv.map(v => `<th>${v}</th>`).join('')}</tr><tr>${bits.split('').map(b => `<td class="${b === '1' ? 'on' : ''}">${b}</td>`).join('')}</tr></table>`; }
+function updHud() {
+  $('hud-title').textContent = run.lv ? run.lv + ' · ' + LEVELS[run.lv].name : 'اختبار تحديد المستوى';
+  $('hud-bar').style.width = Math.round(run.n / run.total * 100) + '%'; $('hud-pts').textContent = run.pts; $('hud-ok').textContent = run.ok; $('hud-bad').textContent = run.bad;
+}
+function nextQ() {
+  pickFn = null; say('');
+  if (run.i < run.items.length) return ask(run.items[run.i++]);
+  if (run.lv === 3 && E.ok && !run.mission) return mission();
+  finishLevel();
+}
+
+// ---------- محرك الأسئلة ----------
+const TYPE = { mcq: 'اختيار من متعدد', tf: 'صح أم خطأ', match: 'توصيل', order: 'ترتيب', build: 'سحب وإفلات', finderr: 'اكتشاف الخطأ', scene: 'تحدٍّ في المدينة', path: 'مسار البيانات' };
+function ask(q, after) {
+  Q = { q, tries: 0, hinted: false, done: false, after: after || nextQ, single: !run.lv };
+  const sceneLike = q.type === 'scene' || q.type === 'path';
+  if (run.lv) { W.mode(run.lv === 2 ? 'lab' : 'nets'); if (!q.keep) W.clearMarks(); layout('play', q.cam || (run.lv === 2 ? 'lab' : 'all')); }
+  ui.innerHTML = `<section class="sheet" id="panel"><div class="qmeta"><span class="tag">${TYPE[q.type]}</span><span>${run.n + 1} / ${run.total}</span></div>
+    <h2 id="qtext">${esc(q.q)}</h2><div id="qbody"></div><div id="qfb" hidden></div>
+    <div class="qact"><button class="btn ghost" id="qhint" ${Q.single ? 'hidden' : ''}>💡 تلميح</button><button class="btn" id="qcheck" hidden>تحقّقي</button><button class="btn pri" id="qnext" hidden>التالي ←</button></div></section>`;
+  $('qhint').onclick = () => { Q.hinted = true; fb('hint', 'تلميح', q.hint + ' (استخدام التلميح يلغي مكافأة المحاولة الأولى)'); };
+  $('qnext').onclick = () => { SFX.play('click'); Q.after(); };
+  RENDER[q.type](q, $('qbody'));
+  if (sceneLike && run.lv) layout('play', q.cam || 'all', false, Math.min(.56, ($('panel').offsetHeight + 130) / E.size()[1]));
+}
+function fb(kind, title, text) { const f = $('qfb'); f.hidden = false; f.className = 'fb ' + kind; f.innerHTML = `<b>${esc(title)}</b><span>${esc(text)}</span>`; f.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
+function judge(ok, correctText) {
+  if (Q.done) return; const q = Q.q;
+  if (ok) {
+    const pts = run.lv ? 10 + (Q.tries === 0 && !Q.hinted ? 5 : 0) : 0;
+    fb('ok', 'أحسنتِ! إجابة صحيحة', q.exp + (pts ? '  (+' + pts + ' نقطة)' : ''));
+    SFX.play('correct'); setTimeout(() => SFX.play('star'), 350); burst(pts === 15 ? 14 : 8); W.robotAct('happy', 1.5); say(pick1(CHEER), 3000);
+    endQ({ pts, correct: true, first: Q.tries === 0 });
+  } else if (Q.tries === 0 && !Q.single) {
+    Q.tries = 1; fb('retry', 'حاولي مرة أخرى', 'تلميح: ' + q.hint); SFX.play('wrong'); W.robotAct('sad', 1.4); say(pick1(RETRY), 3200);
+  } else {
+    fb('bad', 'الإجابة الصحيحة: ' + correctText, q.exp); SFX.play('wrong'); W.robotAct('sad', 1.2); say(pick1(SOFT), 3200);
+    endQ({ pts: 0, correct: false, first: false });
+  }
+}
+function endQ(r) {
+  Q.done = true; run.n++; run.pts += r.pts; r.correct ? run.ok++ : run.bad++; r.id = Q.q.id; r.lv = Q.q.lv; run.res.push(r);
+  const p = me(); if (!r.first && run.lv) { p.wrongQ[r.id] = (p.wrongQ[r.id] || 0) + 1; }
+  $('qhint').hidden = true; $('qcheck').hidden = true; $('qnext').hidden = false; $('panel').classList.add('locked'); updHud();
+  if (run.n >= run.total && run.lv !== 3) $('qnext').textContent = 'عرض النتيجة ←';
+}
+const RENDER = {
+  mcq(q, el) {
+    const opts = shuffle(q.opts.map((t, i) => ({ t, i })));
+    el.innerHTML = (q.bits ? bitTable(q.bits) : '') + `<div class="opts">${opts.map(o => `<button class="opt" data-i="${o.i}">${esc(o.t)}</button>`).join('')}</div>`;
+    const bs = el.querySelectorAll('.opt');
+    bs.forEach(b => b.onclick = () => {
+      if (Q.done || b.disabled) return; const ok = +b.dataset.i === q.a; b.classList.add(ok ? 'ok' : 'bad'); if (!ok) b.disabled = true;
+      judge(ok, q.opts[q.a]); if (Q.done) bs.forEach(x => { if (+x.dataset.i === q.a) x.classList.add('ok'); });
+    });
+  },
+  tf(q, el) {
+    el.innerHTML = `<div class="opts two"><button class="opt" data-v="1">✔ صح</button><button class="opt" data-v="0">✘ خطأ</button></div>`;
+    const bs = el.querySelectorAll('.opt');
+    bs.forEach(b => b.onclick = () => {
+      if (Q.done || b.disabled) return; const ok = (b.dataset.v === '1') === q.a; b.classList.add(ok ? 'ok' : 'bad'); if (!ok) b.disabled = true;
+      judge(ok, q.a ? 'صح' : 'خطأ'); if (Q.done) bs.forEach(x => { if ((x.dataset.v === '1') === q.a) x.classList.add('ok'); });
+    });
+  },
+  match(q, el) {
+    const R = shuffle(q.pairs.map((p, i) => i)), map = {}; let sel = null;
+    el.innerHTML = `<p class="mute">اضغطي على المفهوم ثم على ما يناسبه.</p><div class="match"><div>${q.pairs.map((p, i) => `<button class="mi L" data-i="${i}">${esc(p[0])}</button>`).join('')}</div><div>${R.map(i => `<button class="mi R" data-i="${i}">${esc(q.pairs[i][1])}</button>`).join('')}</div></div>`;
+    const paint = () => {
+      el.querySelectorAll('.mi').forEach(b => { b.className = 'mi ' + (b.classList.contains('L') ? 'L' : 'R'); b.removeAttribute('data-n'); });
+      el.querySelectorAll('.L').forEach(b => { const i = +b.dataset.i; if (sel === i) b.classList.add('sel'); if (map[i] != null) { b.dataset.n = i + 1; b.classList.add('c' + i); const r = el.querySelector('.R[data-i="' + map[i] + '"]'); r.dataset.n = i + 1; r.classList.add('c' + i); } });
+      $('qcheck').hidden = Q.done || Object.keys(map).length < q.pairs.length;
+    };
+    el.querySelectorAll('.L').forEach(b => b.onclick = () => { if (Q.done) return; sel = +b.dataset.i; SFX.play('click'); paint(); });
+    el.querySelectorAll('.R').forEach(b => b.onclick = () => { if (Q.done) return; if (sel == null) { toast('اختاري مفهوماً من العمود الأول أولاً'); return; } const r = +b.dataset.i; for (const k in map) if (map[k] === r) delete map[k]; map[sel] = r; sel = null; SFX.play('click'); paint(); });
+    $('qcheck').onclick = () => {
+      const wrong = q.pairs.map((p, i) => i).filter(i => map[i] !== i);
+      if (wrong.length && Q.tries === 0) { wrong.forEach(i => delete map[i]); judge(false); paint(); toast('أبقيتُ لكِ التوصيلات الصحيحة'); return; }
+      if (wrong.length) { q.pairs.forEach((p, i) => map[i] = i); }
+      judge(!wrong.length, q.pairs.map(p => p[0] + ' ← ' + p[1]).join(' ، ')); paint();
+    };
+    paint();
+  },
+  order(q, el) {
+    const sh = shuffle(q.items.map((t, i) => i)); let seq = [];
+    el.innerHTML = `<p class="mute">اضغطي على العناصر بالترتيب الصحيح (اضغطي ثانية للتراجع).</p><div class="order">${sh.map(i => `<button class="oi" data-i="${i}">${esc(q.items[i])}</button>`).join('')}</div>`;
+    const paint = () => { el.querySelectorAll('.oi').forEach(b => { const k = seq.indexOf(+b.dataset.i); b.classList.toggle('sel', k >= 0); if (k >= 0) b.dataset.n = k + 1; else b.removeAttribute('data-n'); }); $('qcheck').hidden = Q.done || seq.length < q.items.length; };
+    el.querySelectorAll('.oi').forEach(b => b.onclick = () => { if (Q.done) return; const i = +b.dataset.i, k = seq.indexOf(i); if (k >= 0) seq.splice(k, 1); else seq.push(i); SFX.play('click'); paint(); });
+    $('qcheck').onclick = () => {
+      const ok = seq.every((v, i) => v === i);
+      if (!ok && Q.tries === 0) { let k = 0; while (seq[k] === k) k++; seq = seq.slice(0, k); judge(false); paint(); return; }
+      if (!ok) seq = q.items.map((t, i) => i);
+      judge(ok, q.items.join(' ← ')); paint();
+    };
+    paint();
+  },
+  build(q, el) {
+    const chips = shuffle(q.answer.concat(q.extra || [])), slots = [null, null, null, null];
+    el.innerHTML = `<div class="slots" dir="ltr">${[0, 1, 2, 3].map(i => `<button class="slot" data-s="${i}"></button>${i < 3 ? '<i>.</i>' : ''}`).join('')}</div><div class="chips" dir="ltr">${chips.map((c, i) => `<button class="chip2" data-c="${i}">${c}</button>`).join('')}</div><p class="mute">اسحبي كل جزء إلى خانته، أو اضغطي عليه ليذهب إلى أول خانة فارغة.</p>`;
+    const paint = () => {
+      el.querySelectorAll('.slot').forEach(s => { const c = slots[+s.dataset.s]; s.textContent = c == null ? '' : chips[c]; s.classList.toggle('full', c != null); });
+      el.querySelectorAll('.chip2').forEach(c => c.classList.toggle('used', slots.includes(+c.dataset.c)));
+      $('qcheck').hidden = Q.done || slots.includes(null);
+    };
+    const place = (c, s) => { if (Q.done) return; const old = slots.indexOf(c); if (old >= 0) slots[old] = null; if (s == null) s = slots.indexOf(null); if (s < 0) return; slots[s] = c; SFX.play('click'); paint(); };
+    el.querySelectorAll('.slot').forEach(s => s.onclick = () => { if (Q.done) return; slots[+s.dataset.s] = null; paint(); });
+    el.querySelectorAll('.chip2').forEach(ch => {
+      let d = null, ghost = null;
+      ch.onpointerdown = e => { if (Q.done || ch.classList.contains('used')) return; d = { x: e.clientX, y: e.clientY, drag: false }; try { ch.setPointerCapture(e.pointerId); } catch (_) { } };
+      ch.onpointermove = e => {
+        if (!d) return;
+        if (!d.drag && Math.hypot(e.clientX - d.x, e.clientY - d.y) > 8) { d.drag = true; ghost = ch.cloneNode(true); ghost.className = 'chip2 ghost'; document.body.appendChild(ghost); }
+        if (ghost) { ghost.style.left = e.clientX + 'px'; ghost.style.top = e.clientY + 'px'; }
+      };
+      ch.onpointerup = e => {
+        if (!d) return; const was = d.drag; d = null; if (ghost) { ghost.remove(); ghost = null; }
+        if (!was) return place(+ch.dataset.c, null);
+        const t = document.elementFromPoint(e.clientX, e.clientY), s = t && t.closest && t.closest('.slot'); if (s) place(+ch.dataset.c, +s.dataset.s);
+      };
+      ch.onpointercancel = () => { d = null; if (ghost) { ghost.remove(); ghost = null; } };
+    });
+    $('qcheck').onclick = () => {
+      const bad = [0, 1, 2, 3].filter(i => chips[slots[i]] !== q.answer[i]);
+      if (bad.length && Q.tries === 0) { bad.forEach(i => slots[i] = null); judge(false); paint(); return; }
+      if (bad.length) q.answer.forEach((a, i) => { slots[i] = chips.indexOf(a); });
+      judge(!bad.length, q.answer.join('.')); paint();
+    };
+    paint();
+  },
+  finderr(q, el) {
+    el.innerHTML = `<div class="slots" dir="ltr">${q.parts.map((p, i) => `<button class="slot full pick" data-i="${i}">${p}</button>${i < 3 ? '<i>.</i>' : ''}`).join('')}</div>`;
+    const bs = el.querySelectorAll('.slot');
+    bs.forEach(b => b.onclick = () => { if (Q.done || b.disabled) return; const ok = +b.dataset.i === q.bad; b.classList.add(ok ? 'ok' : 'bad'); if (!ok) b.disabled = true; judge(ok, 'الجزء ' + q.parts[q.bad]); if (Q.done) bs[q.bad].classList.add('ok'); });
+  },
+  scene(q, el) {
+    el.innerHTML = `<p class="mute">👆 الجواب داخل المشهد ثلاثي الأبعاد أعلى الشاشة.</p>`;
+    pickFn = id => {
+      if (Q.done) return; const ok = q.targets.includes(id);
+      if (q.types && !q.types.includes(id[0])) return;
+      W.mark(id, ok ? 'ok' : 'bad'); if (!ok) setTimeout(() => { if (!q.targets.includes(id)) W.mark(id, null); }, 900);
+      judge(ok, q.answerText || q.targets.map(nameOf).join(' أو '));
+      if (Q.done) { q.targets.slice(0, 1).forEach(t => W.mark(t, 'ok')); if (q.fly && ok) { SFX.play('packet'); W.fly(q.fly, 2.6, () => { }); } }
+    };
+  },
+  path(q, el) {
+    let seq = [];
+    const paint = () => {
+      el.innerHTML = `<p class="mute">👆 اضغطي على الموجّهات في المدينة بالترتيب الذي ستسلكه الحزمة.</p><div class="chain">${seq.length ? seq.map(r => `<span>${W.RNAME[r]}</span>`).join('<i>←</i>') : '<em>لم تختاري أي موجّه بعد</em>'}</div><div class="row"><button class="btn ghost sm" id="pth-undo" ${seq.length ? '' : 'disabled'}>تراجع</button></div>`;
+      $('pth-undo').onclick = () => { if (Q.done) return; W.mark(seq.pop(), null); paint(); };
+      $('qcheck').hidden = Q.done || seq.length < 2; $('qcheck').textContent = 'تأكيد المسار';
+    };
+    pickFn = id => { if (Q.done || id[0] !== 'R' || seq.includes(id)) return; seq.push(id); W.mark(id, 'sel'); SFX.play('click'); paint(); };
+    $('qcheck').onclick = () => {
+      const ok = seq.join() === q.seq.join(), longer = seq.join() === 'R1,R4,R5,R3';
+      if (!ok) { seq.forEach(r => W.mark(r, null)); seq = []; }
+      if (!ok && longer && Q.tries === 0) toast('هذا المسار يوصل الحزمة لكنه ليس الأقصر.', 3500);
+      judge(ok, q.seq.map(r => W.RNAME[r]).join(' ← ')); if (Q.done) q.seq.forEach(r => W.mark(r, 'ok'));
+      paint();
+    };
+    paint();
+  }
+};
+const nameOf = id => id[0] === 'R' ? W.RNAME[id] : id[0] === 'Q' ? 'المكعب ' + OCT[+id[1]][0] : W.pcs[id] ? 'الجهاز ' + W.pcs[id].ip : id;
+
+// ---------- المهمة الكبرى في المستوى الثالث ----------
+function mission() {
+  const src = pick1(['A1', 'A2', 'A3']), dst = pick1(['C1', 'C2', 'C3']), sip = W.pcs[src].ip, dip = W.pcs[dst].ip;
+  run.mission = { src, dst };
+  const steps = [
+    { id: 'm1', lv: 3, type: 'scene', cam: 'right', types: ['A', 'B', 'C'], targets: [dst], q: `استلمتِ حزمة بيانات! عنوان IP للهدف المكتوب في رأسها هو ${dip}. اضغطي على الجهاز الهدف في المدينة.`, hint: 'ابحثي عن العنوان نفسه فوق أحد أجهزة الشبكة (ج).', exp: 'الهدف هو الجهاز الذي يحمل عنوان IP المكتوب في رأس الحزمة.' },
+    { id: 'm2', lv: 3, type: 'scene', cam: 'left', keep: true, types: ['A', 'B', 'C'], targets: [src], q: `الحزمة أرسلها الجهاز صاحب العنوان ${sip}. اضغطي على الجهاز المصدر.`, hint: 'المصدر في الشبكة (أ)؛ اقرئي العناوين فوق أجهزتها.', exp: 'المصدر هو الجهاز الذي أرسل الحزمة.' },
+    { id: 'm3', lv: 3, type: 'scene', cam: 'left', keep: true, types: ['R'], targets: ['R1'], q: 'اضغطي على الموجّه الذي يستقبل الحزمة أولاً من الجهاز المصدر ليوجّهها خارج الشبكة (أ).', hint: 'هو الموجّه المتصل مباشرة بأجهزة الشبكة (أ).', exp: 'الموجّه 1 متصل بالشبكة (أ)، فيستقبل الحزمة ويقرأ عنوان IP الهدف في رأسها.' },
+    { id: 'm4', lv: 3, type: 'path', cam: 'mid', keep: true, seq: ['R1', 'R2', 'R3'], q: 'حدّدي أقصر مسار تسلكه الحزمة عبر الموجّهات من الشبكة (أ) إلى الشبكة (ج).', hint: 'يوجد مساران؛ اختاري الذي يمر بأقل عدد من الموجّهات، وابدئي بالموجّه 1.', exp: 'أقصر الطرق: موجّه 1 ثم موجّه 2 ثم موجّه 3. الموجّه يوجّه الرسالة عبر أقصر الطرق.' }
+  ];
+  let k = 0;
+  const step = () => {
+    if (k < steps.length) return ask(steps[k++], step);
+    pickFn = null; W.clearMarks(); W.mark(src, 'sel'); W.mark(dst, 'ok');
+    layout('play', 'all');
+    ui.innerHTML = `<section class="sheet"><p class="tag">المهمة الأخيرة</p><h2>أوصلي الحزمة إلى هدفها!</h2><p>المصدر <b dir="ltr">${sip}</b> ← موجّه 1 ← موجّه 2 ← موجّه 3 ← الهدف <b dir="ltr">${dip}</b></p><div class="qact"><button class="btn pri big" id="ms-send">🚀 أرسلي الحزمة</button></div></section>`;
+    $('ms-send').onclick = () => {
+      $('ms-send').disabled = true; SFX.play('packet'); say('الحزمة في طريقها... تابعيها!', 5000);
+      W.fly([src, 'R1', 'R2', 'R3', dst], 5, () => { SFX.play('complete'); burst(18); W.setGlow(1); W.setFlow(1); W.robotAct('happy', 2); say('وصلت الحزمة! المدينة تضيء من جديد ✨', 3000); setTimeout(finishLevel, 2200); });
+    };
+  };
+  step();
+}
+
+// ---------- إنهاء المستوى واحتساب النتيجة ----------
+function finishLevel() {
+  if (!run.lv) return finishPlacement();
+  const p = me(), l = p.lv[run.lv], max = run.total * PER_Q, pct = Math.round(run.pts / max * 100), passed = pct >= S.settings.pass;
+  const score = run.pts + BONUS_DONE + (passed ? BONUS_PASS : 0), stars = !passed ? 0 : pct >= 95 ? 3 : pct >= 85 ? 2 : 1;
+  const wasAll = passedCount(p) === 3;
+  l.tries++; l.lastSet = run.items.map(q => q.id);
+  const improved = score > l.best;
+  if (improved) { l.best = score; l.ok = run.ok; l.bad = run.bad; }
+  l.pct = Math.max(l.pct, pct); l.stars = Math.max(l.stars, stars); l.passed = l.passed || passed;
+  logP(p, `المستوى ${run.lv}: ${pct}% (${score} نقطة) — ${passed ? 'اجتياز' : 'لم يكتمل بعد'}`);
+  if (!wasAll && passedCount(p) === 3) { p.certDate = Date.now(); logP(p, 'أتمّت المستويات الثلاثة واستحقت شهادة الإنجاز'); }
+  save(); Cloud.push(p);
+  celebrate({ lv: run.lv, pct, passed, score, stars, ok: run.ok, bad: run.bad, improved, best: l.best });
+}
+function celebrate(r) {
+  hud(false); pickFn = null; W.mode('nets'); W.labels({}); W.clearMarks(); layout('party', 'party'); syncCity();
+  const p = me(), L = LEVELS[r.lv], all = passedCount(p) === 3, nx = r.lv < 3 && unlocked(p, r.lv + 1) ? r.lv + 1 : 0;
+  if (r.passed) { W.robotAct('dance'); SFX.play('complete'); setTimeout(() => SFX.play('clap', 2.6, .35), 500); confetti(); }
+  else W.robotAct('wave', 3);
+  ui.innerHTML = `<section class="sheet party"><p class="tag">${r.passed ? 'مشهد الاحتفال' : 'محاولة جيدة'}</p>
+    <h2>${r.passed ? L.medal + ' ' + L.name : 'اقتربتِ من الهدف!'}</h2>
+    <p>${r.passed ? L.done : `حصلتِ على ${r.pct}% وتحتاجين ${S.settings.pass}% لاجتياز المستوى. لا تستسلمي؛ راجعي المعلومات ثم أعيدي المحاولة بأسئلة مختلفة.`}</p>
+    <div class="stars" id="cstars">${[1, 2, 3].map(i => `<span class="${i <= r.stars ? 'on' : ''}">★</span>`).join('')}</div>
+    <div class="stats"><div><b>${r.score}</b><small>نقاط هذه المحاولة</small></div><div><b>${r.pct}%</b><small>نسبة الإنجاز</small></div><div><b>${r.ok} / ${r.ok + r.bad}</b><small>إجابات صحيحة</small></div></div>
+    <p class="mute">${r.improved ? 'سُجّلت كأفضل نتيجة لكِ في هذا المستوى.' : 'أفضل نتيجة محفوظة لكِ: ' + r.best + ' نقطة (تُحتسب الأفضل فقط).'}</p>
+    <div class="qact wrap">${r.passed && all ? '<button class="btn pri" id="c-cert">🎓 شهادة الإنجاز</button>' : ''}${r.passed && nx ? `<button class="btn pri" id="c-next">المستوى التالي ←</button>` : ''}${!r.passed ? '<button class="btn pri" id="c-retry">أعيدي المحاولة</button>' : ''}
+      <button class="btn" id="c-rev">📖 مراجعة المعلومات</button><button class="btn ghost" id="c-home">الرئيسية</button></div></section>`;
+  say(r.passed ? pick1(['مبارك! 🎉', 'أنا فخور بكِ!', 'إنجاز رائع!']) : 'أنا واثق أنكِ ستنجحين في المرة القادمة!', 5000);
+  ui.querySelectorAll('#cstars .on').forEach((s, i) => setTimeout(() => { s.classList.add('pop'); SFX.play('star'); }, 700 + i * 420));
+  const b = id => $(id) || {};
+  b('c-cert').onclick = () => go('cert'); b('c-next').onclick = () => startLevel(nx); b('c-retry').onclick = () => startLevel(r.lv);
+  b('c-rev').onclick = () => review(r.lv); b('c-home').onclick = () => go('home');
+}
+function review(lv) {
+  modal(`<h3>مراجعة: ${LEVELS[lv].name}</h3><ul class="rev">${REVIEW[lv].map(t => `<li>${esc(t)}</li>`).join('')}</ul>${lv === 2 ? OCT.map(o => `<p class="mute" dir="ltr">${o[0]} = ${o[1]}</p>`).join('') : ''}<div class="row"><button class="btn pri" data-close>فهمت</button></div>`);
+}
+
+// ---------- اختبار تحديد المستوى ----------
+function startPlacement() {
+  const items = [];
+  for (const k of [1, 2, 3]) items.push(...shuffle(pool(k).filter(q => q.type === 'mcq' || q.type === 'tf')).slice(0, 3));
+  run = { lv: 0, items, i: 0, pts: 0, ok: 0, bad: 0, total: items.length, res: [], n: 0 };
+  hud(true); updHud(); screen = 'play'; W.mode('nets'); W.labels({ net: 1 }); layout('play', 'all');
+  ui.innerHTML = `<section class="sheet"><p class="tag">اختياري</p><h2>اختبار تحديد المستوى</h2><p>${items.length} أسئلة قصيرة من المستويات الثلاثة، بمحاولة واحدة لكل سؤال. بعدها أقترح عليكِ المستوى الأنسب.</p><p class="mute">هذا الاختبار لا يضيف نقاطاً ولا يفتح المستويات المقفلة.</p><div class="qact"><button class="btn ghost" id="pl-back">رجوع</button><button class="btn pri" id="pl-go">ابدئي ←</button></div></section>`;
+  $('pl-back').onclick = () => go('home'); $('pl-go').onclick = nextQ;
+}
+function finishPlacement() {
+  const c = [0, 0, 0, 0], n = [0, 0, 0, 0]; run.res.forEach(r => { n[r.lv]++; if (r.correct) c[r.lv]++; });
+  const good = k => n[k] && c[k] / n[k] >= .66, recLv = !good(1) ? 1 : !good(2) ? 2 : 3, p = me(), open = unlocked(p, recLv);
+  p.placement = { rec: recLv, c: c.slice(1), n: n.slice(1), t: Date.now() }; logP(p, 'اختبار تحديد المستوى: التوصية بالمستوى ' + recLv); save();
+  hud(false); W.labels({}); layout('party', 'home'); W.robotAct('wave', 3);
+  ui.innerHTML = `<section class="sheet party"><p class="tag">نتيجة اختبار تحديد المستوى</p><h2>المستوى الأنسب لكِ: ${recLv} — ${LEVELS[recLv].name}</h2>
+    <div class="stats">${[1, 2, 3].map(k => `<div><b>${c[k]} / ${n[k]}</b><small>أسئلة المستوى ${k}</small></div>`).join('')}</div>
+    <p>${recLv === 1 ? 'ابدئي بتثبيت أساسيات طبقة الشبكة والموجّهات.' : recLv === 2 ? 'أساسياتكِ جيدة. ركّزي على تركيب عنوان IPv4 وخاناته.' : 'مستواكِ متقدم! أنتِ جاهزة لتحدي توجيه البيانات.'}</p>
+    ${open ? '' : `<p class="mute">المستوى ${recLv} ما زال مقفلاً: المستويات تُفتح بالتدرج بعد اجتياز ما قبلها بنسبة ${S.settings.pass}%. ابدئي من أول مستوى مفتوح وستصلين إليه بسرعة.</p>`}
+    <div class="qact"><button class="btn ghost" id="pf-home">الرئيسية</button><button class="btn pri" id="pf-go">${open ? 'ابدئي المستوى ' + recLv : 'إلى المستويات'} ←</button></div></section>`;
+  say('هذه توصيتي لكِ!', 4000);
+  $('pf-home').onclick = () => go('home'); $('pf-go').onclick = () => open ? startLevel(recLv) : go('levels');
+}
+
+/* ===== جدول الصدارة، الإنجازات، لوحة المعلمة، الشهادة ===== */
+const MAXPTS = 3 * (9 * PER_Q + BONUS_DONE + BONUS_PASS);
+const lvName = n => n ? 'المستوى ' + n : 'لم تجتز بعد';
+function boardTable(rs, meId, actions) {
+  if (!rs.length) return '<p class="mute">لا توجد نتائج بعد. كوني أول من يسجّل اسمه!</p>';
+  return `<div class="tw"><table class="tb"><thead><tr><th>الترتيب</th><th>الطالبة</th><th>الشعبة</th><th>وصلت إلى</th><th>النقاط</th><th>الإنجاز</th><th>النجوم</th>${actions ? '<th>المحاولات</th><th></th>' : ''}</tr></thead><tbody>
+    ${rs.map((r, i) => `<tr class="${r.id === meId ? 'me' : ''}"><td>${['🥇', '🥈', '🥉'][i] || i + 1}</td><td>${esc(r.name)}</td><td>${esc(r.section || '—')}</td><td>${lvName(r.level)}</td><td>${r.points}</td><td>${r.pct}%</td><td>${r.stars} ★</td>${actions ? `<td>${r.tries || 0}</td><td><button class="btn ghost sm" data-reset="${esc(r.id)}">إعادة ضبط</button></td>` : ''}</tr>`).join('')}</tbody></table></div>`;
+}
+function cloudNote() {
+  if (Cloud.state === 'on') return '<p class="note ok">متصل بقاعدة البيانات المشتركة: يظهر هنا ترتيب جميع الطالبات.</p>';
+  if (Cloud.state === 'err') return `<p class="note bad">تعذّر الاتصال بقاعدة البيانات المشتركة (${esc(Cloud.err)}). المعروض هو النتائج المحفوظة على هذا الجهاز فقط.</p>`;
+  return '<p class="note">هذا الجدول محلي: يعرض النتائج المحفوظة على هذا الجهاز فقط، وليس مشتركاً بين الهواتف. مزامنة نتائج جميع الطالبات تتطلب ربط اللعبة بقاعدة بيانات مشتركة (من لوحة المعلمة)، أو أن ترسل كل طالبة «رمز نتيجتها» إلى المعلمة لتجمع النتائج.</p>';
+}
+function myCode() { const p = me(); textModal('رمز نتيجتي', b64e(JSON.stringify(rec(p))), 'انسخي هذا الرمز وأرسليه إلى معلمتكِ لتضيف نتيجتكِ إلى جدول الصدارة.'); }
+async function scrBoard() {
+  hud(false); layout('full', 'home');
+  const draw = () => {
+    const p = me();
+    ui.innerHTML = `<section class="page"><div class="shead"><h2>🏆 جدول الصدارة</h2><button class="btn ghost sm" id="bb">رجوع</button></div>${cloudNote()}
+      ${boardTable(allRecords(), p && p.id)}<div class="row wrap">${p ? '<button class="btn" id="b-code">نسخ رمز نتيجتي</button>' : ''}<button class="btn ghost" id="b-ref">تحديث</button></div></section>`;
+    $('bb').onclick = () => go('home'); if ($('b-code')) $('b-code').onclick = myCode;
+    $('b-ref').onclick = async () => { await Cloud.pull(); draw(); toast('تم التحديث'); };
+  };
+  draw(); if (Cloud.url()) { await Cloud.pull(); if (screen === 'board') draw(); }
+}
+function scrMine() {
+  hud(false); layout('full', 'home');
+  const p = me(), t = totals(p), all = passedCount(p) === 3, rk = rankOf(p.id);
+  const medals = [1, 2, 3].filter(k => p.lv[k].passed).map(k => `<span class="medal">${LEVELS[k].medal}<small>${LEVELS[k].name}</small></span>`).concat([1, 2, 3].some(k => p.lv[k].pct === 100) ? ['<span class="medal">💯<small>إجابات مثالية</small></span>'] : [], all ? ['<span class="medal">🏅<small>بطلة الشبكات</small></span>'] : []);
+  ui.innerHTML = `<section class="page"><div class="shead"><h2>🎖️ إنجازاتي</h2><button class="btn ghost sm" id="mb">رجوع</button></div>
+    <p class="who">${esc(p.name)}${p.section ? ' · ' + esc(p.section) : ''}</p>
+    <div class="stats"><div><b>${t.points}</b><small>مجموع النقاط من ${MAXPTS}</small></div><div><b>${t.pct}%</b><small>نسبة الإنجاز</small></div><div><b>${t.stars} / 9</b><small>النجوم</small></div><div><b>${rk}</b><small>ترتيبي</small></div></div>
+    <h3>المستويات</h3><div class="cards">${[1, 2, 3].map(k => { const l = p.lv[k]; return `<div class="card lv${k}"><span class="num">${k}</span><span class="cbody"><b>${LEVELS[k].name}</b><small>${l.tries ? `أفضل نتيجة ${l.best} نقطة · ${l.pct}% · صحيحة ${l.ok} وخاطئة ${l.bad} · المحاولات ${l.tries}` : 'لم تبدئي هذا المستوى بعد'}</small><span class="bar"><i style="width:${l.pct}%"></i></span></span><span class="st">${'★'.repeat(l.stars)}${'☆'.repeat(3 - l.stars)}</span></div>`; }).join('')}</div>
+    <h3>الميداليات</h3><div class="medals">${medals.length ? medals.join('') : '<p class="mute">اجتازي المستوى الأول لتحصلي على أول ميدالية.</p>'}</div>
+    ${p.placement ? `<p class="mute">توصية اختبار تحديد المستوى: المستوى ${p.placement.rec}</p>` : ''}
+    <h3>سجل الإنجازات</h3><ul class="log">${p.log.length ? p.log.map(l => `<li><time>${fmtDate(l.t)}</time> ${esc(l.msg)}</li>`).join('') : '<li class="mute">لا يوجد نشاط بعد.</li>'}</ul>
+    <div class="row wrap">${all ? '<button class="btn pri" id="mn-cert">🎓 شهادتي</button>' : ''}<button class="btn" id="mn-code">نسخ رمز نتيجتي</button><button class="btn ghost" id="mn-sw">تبديل الطالبة</button></div></section>`;
+  $('mb').onclick = () => go('home'); $('mn-code').onclick = myCode; if ($('mn-cert')) $('mn-cert').onclick = () => go('cert');
+  $('mn-sw').onclick = () => { S.current = null; save(); needPlayer(() => go('mine')); };
+}
+
+// ---------- لوحة المعلمة ----------
+let teacherIn = false, tTab = 'res';
+const qText = id => { const q = BANK.concat(S.settings.customQ || []).find(x => x.id === id); return q ? q.q : ({ m1: 'المهمة: تحديد الجهاز الهدف من عنوان IP', m2: 'المهمة: تحديد الجهاز المصدر', m3: 'المهمة: اختيار الموجّه المناسب', m4: 'المهمة: تحديد أقصر مسار' }[id] || id); };
+function parseImport(txt) {
+  txt = txt.trim(); let o = null;
+  try { o = JSON.parse(txt); } catch (e) { try { o = JSON.parse(b64d(txt)); } catch (e2) { return null; } }
+  const list = Array.isArray(o) ? o : o.records ? o.records : [o];
+  return list.filter(r => r && r.id && r.name && typeof r.points === 'number').map(r => ({ id: String(r.id), name: String(r.name).slice(0, 60), section: String(r.section || '').slice(0, 40), points: Math.min(MAXPTS, +r.points || 0), pct: Math.min(100, +r.pct || 0), stars: Math.min(9, +r.stars || 0), level: Math.min(3, +r.level || 0), tries: +r.tries || 0, wrongQ: r.wrongQ || {}, updated: +r.updated || Date.now() }));
+}
+function scrTeacher() {
+  hud(false); layout('full', 'home');
+  const hash = CONFIG.TEACHER_HASH || S.teacherHash;
+  if (!teacherIn) {
+    ui.innerHTML = `<section class="page narrow"><div class="shead"><h2>🔐 لوحة المعلمة – أ. فداء الهليس</h2><button class="btn ghost sm" id="tb">رجوع</button></div>
+      ${hash ? `<label for="t-code">رمز الدخول</label><input id="t-code" type="password" autocomplete="off"><div class="row"><button class="btn pri" id="t-in">دخول</button></div>`
+        : `<p>لم يُضبط رمز دخول على هذا الجهاز بعد. أنشئي رمزكِ الخاص (4 رموز على الأقل) ولا تشاركيه مع الطالبات.</p><label for="t-code">رمز جديد</label><input id="t-code" type="password" autocomplete="off"><label for="t-code2">تأكيد الرمز</label><input id="t-code2" type="password" autocomplete="off"><div class="row"><button class="btn pri" id="t-in">حفظ ودخول</button></div>`}
+      <p class="mute">الرمز يُحفظ على هذا الجهاز بصيغة مشفّرة (بصمة) ولا يظهر في واجهة اللعبة.</p></section>`;
+    $('tb').onclick = () => go('home');
+    $('t-in').onclick = async () => {
+      const c = $('t-code').value;
+      if (!hash) { if (c.length < 4) return toast('الرمز قصير جداً'); if (c !== $('t-code2').value) return toast('الرمزان غير متطابقين'); S.teacherHash = await sha(c); save(); teacherIn = true; return scrTeacher(); }
+      if (await sha(c) === hash) { teacherIn = true; scrTeacher(); } else toast('رمز غير صحيح');
+    };
+    return;
+  }
+  const tabs = { res: 'النتائج', q: 'بنك الأسئلة', set: 'الإعدادات', data: 'البيانات والدليل' };
+  ui.innerHTML = `<section class="page"><div class="shead"><h2>لوحة المعلمة – أ. فداء الهليس</h2><button class="btn ghost sm" id="tb">خروج</button></div>
+    <div class="tabs">${Object.keys(tabs).map(k => `<button class="tab ${k === tTab ? 'on' : ''}" data-t="${k}">${tabs[k]}</button>`).join('')}</div><div id="tbody"></div></section>`;
+  $('tb').onclick = () => { teacherIn = false; go('home'); };
+  ui.querySelectorAll('.tab').forEach(b => b.onclick = () => { tTab = b.dataset.t; scrTeacher(); });
+  ({ res: tRes, q: tQ, set: tSet, data: tData })[tTab]($('tbody'));
+}
+function tRes(el) {
+  const rs = allRecords(), n = rs.length, avg = k => n ? Math.round(rs.reduce((s, r) => s + (r[k] || 0), 0) / n) : 0, wrong = {};
+  rs.forEach(r => { for (const k in (r.wrongQ || {})) wrong[k] = (wrong[k] || 0) + r.wrongQ[k]; });
+  const top = Object.entries(wrong).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  el.innerHTML = `${cloudNote()}<div class="stats"><div><b>${n}</b><small>طالبات مشاركات</small></div><div><b>${avg('pct')}%</b><small>متوسط إنجاز الصف</small></div><div><b>${avg('points')}</b><small>متوسط النقاط</small></div><div><b>${rs.filter(r => r.level === 3).length}</b><small>أتممن المستويات الثلاثة</small></div></div>
+    <h3>نتائج الطالبات وترتيبهن</h3>${boardTable(rs, null, true)}
+    <h3>الأسئلة الأكثر خطأً</h3>${top.length ? `<ol class="how">${top.map(([id, c]) => `<li>${esc(qText(id))} <b class="bad">(${c} مرة)</b></li>`).join('')}</ol>` : '<p class="mute">لا توجد أخطاء مسجلة بعد.</p>'}
+    <div class="row"><button class="btn ghost" id="tr-ref">تحديث من القاعدة المشتركة</button></div>`;
+  el.querySelectorAll('[data-reset]').forEach(b => b.onclick = () => {
+    if (!b.dataset.sure) { b.dataset.sure = 1; b.textContent = 'تأكيد الحذف؟'; b.classList.add('danger'); return; }
+    const id = b.dataset.reset; delete S.players[id]; delete S.imported[id]; if (S.current === id) S.current = null; save();
+    toast(Cloud.cache && Cloud.cache[id] ? 'حُذفت محلياً. لحذفها من القاعدة المشتركة استخدمي لوحة Firebase.' : 'أُعيد ضبط محاولة الطالبة', 4000); tRes(el);
+  });
+  $('tr-ref').onclick = async () => { if (!Cloud.url()) return toast('لم تُربط قاعدة بيانات مشتركة بعد'); await Cloud.pull(); tRes(el); };
+}
+function tQ(el) {
+  const cq = S.settings.customQ || [], dis = S.settings.disabledQ || [];
+  el.innerHTML = `<h3>إضافة سؤال جديد</h3><div class="form">
+    <label for="q-lv">المستوى</label><select id="q-lv"><option value="1">1 – مستكشفة الشبكة</option><option value="2">2 – مهندسة عناوين IP</option><option value="3">3 – قائدة توجيه البيانات</option></select>
+    <label for="q-type">النوع</label><select id="q-type"><option value="mcq">اختيار من متعدد</option><option value="tf">صح وخطأ</option></select>
+    <label for="q-q">نص السؤال</label><textarea id="q-q" rows="2"></textarea>
+    <div id="q-opts"><label for="q-o0">الإجابة الصحيحة</label><input id="q-o0" type="text"><label for="q-o1">بدائل خاطئة (3)</label><input id="q-o1" type="text"><input id="q-o2" type="text" aria-label="بديل خاطئ 2"><input id="q-o3" type="text" aria-label="بديل خاطئ 3"></div>
+    <div id="q-tf" hidden><label for="q-a">الإجابة</label><select id="q-a"><option value="1">صح</option><option value="0">خطأ</option></select></div>
+    <label for="q-hint">تلميح</label><input id="q-hint" type="text"><label for="q-exp">الشرح (يظهر بعد الإجابة)</label><input id="q-exp" type="text">
+    <div class="row"><button class="btn pri" id="q-add">إضافة السؤال</button></div></div>
+    <h3>أسئلتي المضافة (${cq.length})</h3>${cq.length ? `<ul class="qlist">${cq.map(q => `<li><span>م${q.lv} · ${esc(q.q)}</span><button class="btn ghost sm" data-del="${q.id}">حذف</button></li>`).join('')}</ul>` : '<p class="mute">لم تُضاف أسئلة بعد.</p>'}
+    <h3>أسئلة اللعبة الأساسية</h3><p class="mute">أزيلي العلامة عن أي سؤال لتعطيله. يلزم بقاء أسئلة كافية في كل مستوى.</p>
+    ${[1, 2, 3].map(k => `<details><summary>المستوى ${k} (${BANK.filter(q => q.lv === k).length} سؤالاً)</summary><ul class="qlist">${BANK.filter(q => q.lv === k).map(q => `<li><label><input type="checkbox" data-q="${q.id}" ${dis.includes(q.id) ? '' : 'checked'}> <span>${TYPE[q.type]} · ${esc(q.q)}</span></label></li>`).join('')}</ul></details>`).join('')}`;
+  $('q-type').onchange = () => { const tf = $('q-type').value === 'tf'; $('q-tf').hidden = !tf; $('q-opts').hidden = tf; };
+  $('q-add').onclick = () => {
+    const type = $('q-type').value, q = { id: 'u' + Date.now().toString(36), lv: +$('q-lv').value, type, q: $('q-q').value.trim(), hint: $('q-hint').value.trim() || 'راجعي معلومات الدرس.', exp: $('q-exp').value.trim() || '' };
+    if (q.q.length < 5) return toast('اكتبي نص السؤال');
+    if (type === 'mcq') { q.opts = [0, 1, 2, 3].map(i => $('q-o' + i).value.trim()).filter(Boolean); q.a = 0; if (q.opts.length < 2 || !$('q-o0').value.trim()) return toast('أدخلي الإجابة الصحيحة وبديلاً خاطئاً واحداً على الأقل'); }
+    else q.a = $('q-a').value === '1';
+    S.settings.customQ = cq.concat([q]); save(); toast('أُضيف السؤال'); tQ(el);
+  };
+  el.querySelectorAll('[data-del]').forEach(b => b.onclick = () => { S.settings.customQ = cq.filter(q => q.id !== b.dataset.del); save(); tQ(el); });
+  el.querySelectorAll('[data-q]').forEach(c => c.onchange = () => { const s = new Set(S.settings.disabledQ || []); c.checked ? s.delete(c.dataset.q) : s.add(c.dataset.q); S.settings.disabledQ = [...s]; save(); });
+}
+function tSet(el) {
+  const s = S.settings;
+  el.innerHTML = `<div class="form"><label for="s-pass">حد اجتياز المستوى (%)</label><input id="s-pass" type="number" min="40" max="100" step="5" value="${s.pass}">
+    <label for="s-un">نظام فتح المستويات</label><select id="s-un"><option value="seq" ${s.unlock === 'seq' ? 'selected' : ''}>متدرج: كل مستوى يُفتح بعد اجتياز السابق</option><option value="open" ${s.unlock === 'open' ? 'selected' : ''}>وضع تشخيصي دون قيود: كل المستويات مفتوحة</option></select>
+    <fieldset><legend>المستويات المفعّلة</legend>${[1, 2, 3].map(k => `<label><input type="checkbox" id="s-en${k}" ${s.enabled[k] !== false ? 'checked' : ''}> المستوى ${k} – ${LEVELS[k].name}</label>`).join('')}</fieldset>
+    <label for="s-cloud">رابط قاعدة البيانات المشتركة (Firebase Realtime Database)</label><input id="s-cloud" type="url" dir="ltr" placeholder="https://xxxx-default-rtdb.firebaseio.com" value="${esc(s.cloud || '')}">
+    <p class="mute">${EMBED ? 'تنبيه: داخل هذه النافذة يُمنع الاتصال بخوادم خارجية، فلن تعمل المزامنة هنا. تعمل في النسخة المستقلة المرفوعة على الإنترنت.' : 'اتركيه فارغاً للعمل محلياً. الرابط ليس سرياً؛ الحماية تتم بقواعد الصلاحيات في Firebase.'}</p>
+    <div class="row wrap"><button class="btn pri" id="s-save">حفظ الإعدادات</button><button class="btn ghost" id="s-test">اختبار الاتصال</button><button class="btn ghost" id="s-json">نسخ الإعدادات (JSON)</button></div>
+    ${CONFIG.TEACHER_HASH ? '' : '<label for="s-code">تغيير رمز المعلمة</label><input id="s-code" type="password" autocomplete="off" placeholder="رمز جديد"><div class="row"><button class="btn ghost" id="s-chg">تغيير الرمز</button></div>'}
+    <p class="mute">الإعدادات تُحفظ على هذا الجهاز. لتطبيقها على هواتف الطالبات في النسخة المتصلة: انسخي JSON الإعدادات والصقيه في المسار settings داخل قاعدة Firebase، فتقرؤه اللعبة عند فتحها.</p></div>`;
+  const read = () => { s.pass = Math.max(40, Math.min(100, +$('s-pass').value || 70)); s.unlock = $('s-un').value; [1, 2, 3].forEach(k => s.enabled[k] = $('s-en' + k).checked); s.cloud = $('s-cloud').value.trim(); save(); };
+  $('s-save').onclick = () => { read(); toast('حُفظت الإعدادات'); };
+  $('s-test').onclick = async () => { read(); if (!Cloud.url()) return toast('أدخلي الرابط أولاً'); const r = await Cloud.pull(); toast(r ? 'الاتصال ناجح ✔' : 'فشل الاتصال: ' + Cloud.err, 4000); };
+  $('s-json').onclick = () => { read(); textModal('إعدادات اللعبة', JSON.stringify({ pass: s.pass, unlock: s.unlock, enabled: s.enabled, disabledQ: s.disabledQ, customQ: s.customQ }, null, 1)); };
+  if ($('s-chg')) $('s-chg').onclick = async () => { const c = $('s-code').value; if (c.length < 4) return toast('الرمز قصير جداً'); S.teacherHash = await sha(c); save(); toast('تم تغيير الرمز'); };
+}
+function tData(el) {
+  el.innerHTML = `<h3>تصدير واستيراد النتائج</h3><div class="row wrap"><button class="btn" id="d-csv">تصدير CSV</button><button class="btn" id="d-json">تصدير JSON</button><button class="btn ghost" id="d-copy">نسخ JSON</button></div>
+    <label for="d-paste">استيراد: الصقي هنا رموز نتائج الطالبات أو محتوى ملف JSON (رمز في كل سطر)</label><textarea id="d-paste" rows="4" dir="ltr"></textarea>
+    <div class="row wrap"><button class="btn pri" id="d-imp">استيراد النص</button><label class="btn ghost filebtn" for="d-file">استيراد ملف JSON</label><input id="d-file" type="file" accept=".json,application/json,text/plain" hidden></div>
+    <h3>دليل المعلمة</h3>
+    <details open><summary>تشغيل اللعبة ومشاركتها مع الطالبات</summary><p>هذه الصفحة تعمل مباشرة. لمشاركتها دون حسابات: استخدمي ملف اللعبة المستقل (index.html مع ملفات PWA) وارفعيه على استضافة مجانية مثل GitHub Pages أو Netlify، ثم أرسلي الرابط للطالبات. ويمكن أيضاً إرسال ملف index.html نفسه عبر واتساب أو بلوتوث ليُفتح في المتصفح.</p></details>
+    <details><summary>تنزيلها على الهاتف والعمل دون إنترنت</summary><p>اللعبة ملف واحد لا يحمّل أي شيء من الإنترنت: الرسوم ثلاثية الأبعاد والأصوات والأسئلة كلها بداخله. بعد فتح الرابط المستضاف مرة واحدة: من قائمة المتصفح اختاري «إضافة إلى الشاشة الرئيسية / تثبيت التطبيق»، فتعمل بعدها دون إنترنت (عبر Service Worker). أو احفظي ملف index.html على الهاتف وافتحيه مباشرة.</p></details>
+    <details><summary>ربط قاعدة البيانات المشتركة (جدول صدارة لكل الهواتف)</summary><p>1) أنشئي مشروعاً مجانياً في Firebase وفعّلي Realtime Database. 2) ضعي قواعد الصلاحيات الآتية. 3) انسخي رابط القاعدة وضعيه في المتغير CLOUD_URL أعلى ملف اللعبة قبل رفعه (أو في تبويب الإعدادات على كل جهاز). لا يوضع في الملف أي مفتاح سري.</p>
+      <pre dir="ltr">{"rules":{"scores":{".read":true,"$id":{".write":true,
+ ".validate":"newData.hasChildren(['id','name','points']) &amp;&amp; newData.child('name').isString() &amp;&amp; newData.child('name').val().length &lt; 60 &amp;&amp; newData.child('points').isNumber() &amp;&amp; newData.child('points').val() &lt;= ${MAXPTS}"}},
+ "settings":{".read":true,".write":false}}}</pre>
+      <p class="mute">هذه القواعد تسمح لأي من لديه الرابط بتسجيل نتيجة (دون تسجيل دخول) وتمنع تعديل الإعدادات إلا من لوحة Firebase. حذف مشاركة من القاعدة المشتركة يتم من لوحة Firebase. لم أتمكن من اختبار المزامنة فعلياً لأنها تحتاج حساب Firebase خاصاً بكِ.</p></details>
+    <details><summary>إدارة جدول الصدارة دون إنترنت</summary><p>كل طالبة تضغط «نسخ رمز نتيجتي» وترسله لكِ. الصقي الرموز في خانة الاستيراد أعلاه فيظهر ترتيب الجميع على جهازكِ، ثم صدّريه CSV أو اعرضيه على الصف.</p></details>
+    <details><summary>إضافة أسئلة جديدة</summary><p>من تبويب «بنك الأسئلة» أضيفي أسئلة اختيار من متعدد أو صح وخطأ لأي مستوى، وعطّلي ما لا تريدينه. الأنواع الأخرى (توصيل، ترتيب، سحب وإفلات) تُضاف في المصفوفة BANK داخل ملف اللعبة بالصيغة نفسها.</p></details>
+    <h3>منطقة الخطر</h3><div class="row"><button class="btn ghost" id="d-clear">مسح كل النتائج من هذا الجهاز</button></div>`;
+  const rs = () => allRecords().map((r, i) => Object.assign({ rank: i + 1 }, r));
+  $('d-csv').onclick = () => saveFile('network-rescue-results.csv', '﻿' + ['الترتيب,الاسم,الشعبة,المستوى,النقاط,نسبة الإنجاز,النجوم,المحاولات'].concat(rs().map(r => [r.rank, '"' + r.name.replace(/"/g, '""') + '"', '"' + (r.section || '').replace(/"/g, '""') + '"', r.level, r.points, r.pct + '%', r.stars, r.tries || 0].join(','))).join('\r\n'));
+  $('d-json').onclick = () => saveFile('network-rescue-results.json', JSON.stringify({ records: rs() }, null, 1));
+  $('d-copy').onclick = () => textModal('النتائج (JSON)', JSON.stringify({ records: rs() }));
+  const imp = txt => { let n = 0; txt.split(/\n+/).concat([txt]).forEach(part => { const l = part.trim() && parseImport(part); if (l) l.forEach(r => { if (!S.players[r.id]) { S.imported[r.id] = r; n++; } }); }); save(); toast(n ? 'تم استيراد النتائج ✔' : 'لم أجد نتائج صالحة في النص', 3500); if (n) $('d-paste').value = ''; };
+  $('d-imp').onclick = () => imp($('d-paste').value);
+  $('d-file').onchange = e => { const f = e.target.files[0]; if (!f) return; const rd = new FileReader(); rd.onload = () => imp(String(rd.result)); rd.readAsText(f); };
+  $('d-clear').onclick = function () { if (!this.dataset.sure) { this.dataset.sure = 1; this.textContent = 'تأكيد: مسح كل النتائج نهائياً؟'; this.classList.add('danger'); return; } S.players = {}; S.imported = {}; S.current = null; save(); toast('مُسحت النتائج'); tData(el); };
+}
+
+// ---------- شهادة الإنجاز ----------
+const CF = '"Segoe UI","Noto Kufi Arabic","Noto Sans Arabic","Geeza Pro",Tahoma,Arial,sans-serif';
+function drawCert(name, p) {
+  const c = document.createElement('canvas'); c.width = 1684; c.height = 1190; const x = c.getContext('2d'), Wc = 1684, Hc = 1190, cx = Wc / 2;
+  const g = x.createLinearGradient(0, 0, Wc, Hc); g.addColorStop(0, '#0a1436'); g.addColorStop(.55, '#122058'); g.addColorStop(1, '#1b1650'); x.fillStyle = g; x.fillRect(0, 0, Wc, Hc);
+  // خلفية تقنية بمنظور ثلاثي الأبعاد
+  x.strokeStyle = 'rgba(56,225,255,.16)'; x.lineWidth = 2;
+  for (let i = -14; i <= 14; i++) { x.beginPath(); x.moveTo(cx + i * 40, 760); x.lineTo(cx + i * 190, Hc); x.stroke(); }
+  for (let j = 0; j < 9; j++) { const y = 760 + Math.pow(j / 8, 1.8) * 430; x.beginPath(); x.moveTo(0, y); x.lineTo(Wc, y); x.stroke(); }
+  const cube = (px, py, s, col) => { x.globalAlpha = .5; x.fillStyle = col; x.beginPath(); x.moveTo(px, py - s); x.lineTo(px + s * .87, py - s / 2); x.lineTo(px, py); x.lineTo(px - s * .87, py - s / 2); x.closePath(); x.fill(); x.globalAlpha = .32; x.beginPath(); x.moveTo(px - s * .87, py - s / 2); x.lineTo(px, py); x.lineTo(px, py + s); x.lineTo(px - s * .87, py + s / 2); x.closePath(); x.fill(); x.globalAlpha = .2; x.beginPath(); x.moveTo(px + s * .87, py - s / 2); x.lineTo(px, py); x.lineTo(px, py + s); x.lineTo(px + s * .87, py + s / 2); x.closePath(); x.fill(); x.globalAlpha = 1; };
+  [[170, 210, 46, '#38e1ff'], [270, 330, 26, '#ff7ac3'], [1520, 200, 50, '#ffd166'], [1420, 330, 28, '#2dd4bf'], [1560, 520, 22, '#8b7bff'], [130, 520, 24, '#ffd166']].forEach(a => cube(...a));
+  // إطار ذهبي
+  const gold = x.createLinearGradient(0, 0, Wc, Hc); gold.addColorStop(0, '#fff1b8'); gold.addColorStop(.3, '#e2b33c'); gold.addColorStop(.6, '#fff1b8'); gold.addColorStop(1, '#b8861b');
+  x.strokeStyle = gold; x.lineWidth = 16; x.strokeRect(34, 34, Wc - 68, Hc - 68); x.lineWidth = 3; x.strokeRect(62, 62, Wc - 124, Hc - 124);
+  x.fillStyle = gold; [[34, 34], [Wc - 34, 34], [34, Hc - 34], [Wc - 34, Hc - 34]].forEach(([a, b]) => { x.beginPath(); x.moveTo(a, b - 30); x.lineTo(a + 30, b); x.lineTo(a, b + 30); x.lineTo(a - 30, b); x.fill(); });
+  const T = (t, y, size, col, bold, xx, al) => { x.direction = 'rtl'; x.textAlign = al || 'center'; x.fillStyle = col; x.font = (bold ? '700 ' : '400 ') + size + 'px ' + CF; x.fillText(t, xx == null ? cx : xx, y); };
+  // شعار اللعبة
+  x.strokeStyle = '#38e1ff'; x.lineWidth = 4; const lx = cx, ly = 118; [[0, -34], [-34, 20], [34, 20]].forEach(([a, b]) => { x.beginPath(); x.moveTo(lx, ly); x.lineTo(lx + a, ly + b); x.stroke(); x.fillStyle = '#ffd166'; x.beginPath(); x.arc(lx + a, ly + b, 9, 0, 7); x.fill(); }); x.fillStyle = '#38e1ff'; x.beginPath(); x.arc(lx, ly, 13, 0, 7); x.fill();
+  T('مغامرة إنقاذ الشبكة · NETWORK RESCUE 3D', 196, 30, '#38e1ff', true);
+  x.shadowColor = 'rgba(255,209,102,.5)'; x.shadowBlur = 24; T('شهادة إنجاز', 300, 96, '#ffd980', true); x.shadowBlur = 0;
+  T('تتشرف لعبة مغامرة إنقاذ الشبكة بمنح الطالبة:', 372, 34, '#dfe8ff');
+  let ns = 80; x.font = '700 ' + ns + 'px ' + CF; while (x.measureText(name).width > 1100 && ns > 40) { ns -= 4; x.font = '700 ' + ns + 'px ' + CF; }
+  T(name, 478, ns, '#ffffff', true); x.fillStyle = gold; x.fillRect(cx - 380, 506, 760, 4);
+  T('شهادة إتمام مغامرة تعلم طبقة الشبكة', 572, 42, '#38e1ff', true);
+  T('تقديراً لتميزها في إنجاز المستويات الثلاثة وفهم:', 632, 30, '#dfe8ff');
+  T(['وظائف طبقة الشبكة', 'عنوان IP', 'IPv4', 'توجيه حزم البيانات', 'دور الموجهات Routers'].join('\u200F  •  \u200F'), 686, 28, '#ffd166');
+  const t = totals(p), rk = rankOf(p.id), n = allRecords().length, shared = Cloud.state === 'on';
+  const boxes = [['النتيجة النهائية', t.points + ' / ' + MAXPTS], ['نسبة الإنجاز', t.pct + '%'], [shared ? 'الترتيب بين الطالبات' : 'الترتيب (على هذا الجهاز)', rk + ' من ' + n]];
+  boxes.forEach((b, i) => { const bx = cx + 330 - i * 330; x.fillStyle = 'rgba(10,20,54,.78)'; x.strokeStyle = 'rgba(255,217,128,.8)'; x.lineWidth = 2; x.beginPath(); x.rect(bx - 150, 730, 300, 120); x.fill(); x.stroke(); T(b[0], 772, 24, '#9db0e0', false, bx); T(b[1], 826, 40, '#ffffff', true, bx); });
+  T('إعداد المعلمة:', 930, 26, '#9db0e0', false, Wc - 130, 'right'); T('أ. فداء الهليس', 978, 40, '#ffd980', true, Wc - 130, 'right'); T('مدرسة فلسطين الحبيبة 2', 1026, 30, '#dfe8ff', false, Wc - 130, 'right');
+  T('التاريخ: ' + fmtDate(p.certDate || Date.now()), 1090, 26, '#dfe8ff', false, Wc - 130, 'right');
+  // الروبوت في زاوية الشهادة
+  const rx = 250, ry = 930; x.fillStyle = '#38e1ff'; x.globalAlpha = .7; x.beginPath(); x.moveTo(rx - 34, ry + 92); x.lineTo(rx + 34, ry + 92); x.lineTo(rx, ry + 140); x.fill(); x.globalAlpha = 1;
+  x.strokeStyle = '#8b7bff'; x.lineWidth = 18; x.lineCap = 'round'; x.beginPath(); x.moveTo(rx - 70, ry + 30); x.lineTo(rx - 104, ry + 76); x.moveTo(rx + 70, ry + 20); x.lineTo(rx + 120, ry - 50); x.stroke();
+  x.fillStyle = '#eef3ff'; x.beginPath(); x.arc(rx - 104, ry + 80, 15, 0, 7); x.arc(rx + 122, ry - 56, 15, 0, 7); x.fill();
+  x.beginPath(); x.ellipse(rx, ry + 40, 72, 62, 0, 0, 7); x.fill(); x.fillStyle = '#8b7bff'; x.fillRect(rx - 72, ry + 32, 144, 14); x.fillStyle = '#38e1ff'; x.fillRect(rx - 18, ry + 54, 36, 16);
+  x.strokeStyle = '#c9d4f5'; x.lineWidth = 6; x.beginPath(); x.moveTo(rx, ry - 96); x.lineTo(rx, ry - 126); x.stroke(); x.fillStyle = '#ff9f43'; x.beginPath(); x.arc(rx, ry - 132, 12, 0, 7); x.fill();
+  x.fillStyle = '#8b7bff'; x.fillRect(rx - 96, ry - 70, 192, 34); x.fillStyle = '#eef3ff'; x.fillRect(rx - 80, ry - 100, 160, 96); x.fillStyle = '#101a44'; x.fillRect(rx - 64, ry - 86, 128, 66);
+  x.fillStyle = '#38e1ff'; x.beginPath(); x.ellipse(rx - 30, ry - 60, 13, 16, 0, 0, 7); x.ellipse(rx + 30, ry - 60, 13, 16, 0, 0, 7); x.fill(); x.strokeStyle = '#ffd166'; x.lineWidth = 5; x.beginPath(); x.arc(rx, ry - 44, 16, .15 * Math.PI, .85 * Math.PI); x.stroke();
+  T('NET ROBOT', 1100, 20, '#38e1ff', true, rx);
+  return c;
+}
+function pdfFromJpeg(bytes, w, h) {
+  const te = new TextEncoder(), chunks = [], offs = []; let len = 0;
+  const push = d => { if (typeof d === 'string') d = te.encode(d); chunks.push(d); len += d.length; };
+  const obj = (n, body) => { offs[n] = len; push(n + ' 0 obj\n'); body(); push('\nendobj\n'); };
+  push('%PDF-1.4\n');
+  obj(1, () => push('<< /Type /Catalog /Pages 2 0 R >>')); obj(2, () => push('<< /Type /Pages /Kids [3 0 R] /Count 1 >>'));
+  obj(3, () => push('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 842 595] /Resources << /XObject << /Im0 5 0 R >> >> /Contents 4 0 R >>'));
+  const cs = 'q 842 0 0 595 0 0 cm /Im0 Do Q'; obj(4, () => push('<< /Length ' + cs.length + ' >>\nstream\n' + cs + '\nendstream'));
+  obj(5, () => { push('<< /Type /XObject /Subtype /Image /Width ' + w + ' /Height ' + h + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + bytes.length + ' >>\nstream\n'); push(bytes); push('\nendstream'); });
+  const xr = len; push('xref\n0 6\n0000000000 65535 f \n'); for (let i = 1; i <= 5; i++) push(String(offs[i]).padStart(10, '0') + ' 00000 n \n');
+  push('trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n' + xr + '\n%%EOF');
+  return new Blob(chunks, { type: 'application/pdf' });
+}
+const dataBytes = url => { const b = atob(url.split(',')[1]), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; };
+function scrCert() {
+  hud(false); layout('full', 'home');
+  const p = me();
+  if (!p || passedCount(p) < 3) { ui.innerHTML = `<section class="page narrow"><h2>شهادة الإنجاز</h2><p>تحصلين على الشهادة بعد اجتياز المستويات الثلاثة.</p><div class="row"><button class="btn pri" id="cb">رجوع</button></div></section>`; $('cb').onclick = () => go('home'); return; }
+  let canvas = null;
+  ui.innerHTML = `<section class="page"><div class="shead"><h2>🎓 شهادة الإنجاز</h2><button class="btn ghost sm" id="cb">رجوع</button></div>
+    <label for="c-name">اكتبي اسمكِ الكامل كما تريدينه على الشهادة</label><div class="row"><input id="c-name" type="text" maxlength="50" value="${esc(p.name)}"><button class="btn pri" id="c-make">إنشاء الشهادة</button></div>
+    <div id="c-out"></div></section>`;
+  $('cb').onclick = () => go('home');
+  const make = () => {
+    const name = $('c-name').value.trim() || p.name; canvas = drawCert(name, p);
+    const canShare = !EMBED && navigator.canShare && navigator.share;
+    $('c-out').innerHTML = `<img id="c-img" class="certimg" alt="شهادة إنجاز باسم ${esc(name)}" src="${canvas.toDataURL('image/jpeg', .9)}">
+      <div class="row wrap"><button class="btn pri" id="c-png">تحميل PNG</button><button class="btn pri" id="c-pdf">تحميل PDF</button>${EMBED ? '' : '<button class="btn" id="c-print">طباعة</button>'}${canShare ? '<button class="btn" id="c-share">مشاركة الصورة</button>' : ''}</div>
+      ${EMBED ? '<p class="mute">للطباعة أو المشاركة: حمّلي الشهادة PDF أو PNG ثم اطبعيها أو شاركيها من هاتفكِ. (أزرار الطباعة والمشاركة المباشرة تظهر في النسخة المستقلة من اللعبة.)</p>' : ''}`;
+    const blob = () => new Promise(r => canvas.toBlob(r, 'image/png'));
+    $('c-png').onclick = async () => saveFile('certificate-network-rescue.png', await blob());
+    $('c-pdf').onclick = () => saveFile('certificate-network-rescue.pdf', pdfFromJpeg(dataBytes(canvas.toDataURL('image/jpeg', .93)), canvas.width, canvas.height));
+    if ($('c-print')) $('c-print').onclick = () => { $('printarea').innerHTML = `<img src="${canvas.toDataURL('image/png')}" alt="">`; setTimeout(() => window.print(), 150); };
+    if ($('c-share')) $('c-share').onclick = async () => { try { const f = new File([await blob()], 'certificate.png', { type: 'image/png' }); if (navigator.canShare({ files: [f] })) await navigator.share({ files: [f], title: 'شهادة إنجاز – مغامرة إنقاذ الشبكة' }); else toast('المشاركة غير مدعومة على هذا الجهاز'); } catch (e) { } };
+    SFX.play('complete'); confetti();
+  };
+  $('c-make').onclick = make; make();
+}
+
+// ---------- التشغيل ----------
+(function boot() {
+  SFX.setOn(S.sound !== false);
+  const sb = $('b-snd'), paint = () => { sb.textContent = SFX.isOn() ? '🔊' : '🔇'; sb.setAttribute('aria-pressed', SFX.isOn()); };
+  sb.onclick = () => { SFX.init(); SFX.setOn(!SFX.isOn()); S.sound = SFX.isOn(); save(); paint(); }; paint();
+  document.addEventListener('pointerdown', () => SFX.init(), { passive: true });
+  $('b-home').onclick = () => {
+    if (screen !== 'play') return go('home');
+    modal('<h3>مغادرة المستوى؟</h3><p>سيضيع تقدم هذه المحاولة فقط؛ نتائجكِ السابقة محفوظة.</p><div class="row"><button class="btn pri" id="lv-leave">نعم، إلى الرئيسية</button><button class="btn ghost" data-close>متابعة اللعب</button></div>', () => { $('lv-leave').onclick = () => go('home'); });
+  };
+  if (!E.ok) { document.body.classList.add('no3d'); toast('متصفحكِ لا يدعم العرض ثلاثي الأبعاد (WebGL)؛ ستعمل الأسئلة دون مشاهد المدينة.', 6000); }
+  if (!storageOK) toast('تنبيه: المتصفح يمنع الحفظ على هذا الجهاز، فلن يُحفظ التقدم بعد الإغلاق.', 6000);
+  go('home'); layout('home', 'home', true);
+  if (Cloud.url()) Cloud.settings().then(() => Cloud.pull());
+  if (!EMBED && /^https?:$/.test(location.protocol) && 'serviceWorker' in navigator) {
+    const l = document.createElement('link'); l.rel = 'manifest'; l.href = 'manifest.webmanifest'; document.head.appendChild(l);
+    navigator.serviceWorker.register('sw.js').catch(() => { });
+  }
+})();
+
+</script>
+</body>
+</html>
